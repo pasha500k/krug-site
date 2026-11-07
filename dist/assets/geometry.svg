@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 460" fill="none">
+<defs><pattern id="g" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" stroke="#d5e4ca" stroke-opacity=".12"/></pattern></defs>
+<path fill="url(#g)" d="M0 0h520v460H0z"/>
+<circle cx="264" cy="226" r="163" stroke="#a5cdb3" stroke-width="1.3"/>
+<circle cx="264" cy="226" r="192" stroke="#a5cdb3" stroke-opacity=".36" stroke-dasharray="4 9"/>
+<path d="M259 63 112 285 403 312Z" fill="#8ab699" fill-opacity=".22" stroke="#d7e9cd" stroke-width="2"/>
+<path d="m259 63 20 236M112 285 339 201M403 312 192 164" stroke="#edd498" stroke-width="1.7"/>
+<path d="M52 226h424M264 28v395" stroke="#b9d9c2" stroke-opacity=".4" stroke-dasharray="4 5"/>
+<g fill="#e9efd5"><circle cx="259" cy="63" r="5"/><circle cx="112" cy="285" r="5"/><circle cx="403" cy="312" r="5"/><circle cx="273" cy="225" r="4"/></g>
+<g fill="#e9efd5" font-size="21" font-family="Georgia,serif" font-style="italic"><text x="269" y="52">A</text><text x="86" y="291">B</text><text x="413" y="321">C</text><text x="278" y="249">P</text></g>
+</svg>

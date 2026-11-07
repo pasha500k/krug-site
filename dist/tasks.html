@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Круг — библиотека олимпиадной математики. 57 томов, теория и поиск по архивным задачам.">
+<title>Поиск задач · Круг</title><link rel="icon" href="assets/mark.svg"><link rel="stylesheet" href="assets/site.css">
+<script defer src="assets/site.js"></script></head>
+<body><a class="skip" href="#main">К содержанию</a><header class="top"><div class="wrap"><a class="brand" href="index.html"><img src="assets/mark.svg" alt="" width="37" height="37">Круг</a><nav class="nav" aria-label="Основное меню"><a href="index.html">Тома</a><a href="tasks.html" aria-current="page">Задачи</a><a href="about.html">О библиотеке</a></nav></div></header>
+<main class="wrap" id="main">
+<header class="page-head"><div class="eyebrow">Архив олимпиад</div><h1>Найти задачу</h1><p>Ищите по условию, теме, олимпиаде или номеру З-00001. Формулы и рисунки сверяйте с исходным PDF.</p></header>
+<form class="filters" id="task-form">
+<div class="field grow"><label for="task-query">Поиск по условиям</label><input type="search" id="task-query" name="q" placeholder="Например, вписанный угол"></div>
+<div class="field"><label for="task-topic">Тема</label><select id="task-topic" name="topic"><option value="">Все темы</option></select></div>
+<div class="field"><label for="task-source">Олимпиада</label><select id="task-source" name="source"><option value="">Все олимпиады</option></select></div>
+<div class="field"><label for="task-grade">Класс</label><select id="task-grade" name="grade"><option value="">Все классы</option></select></div>
+<button class="btn">Найти</button><button class="btn btn-line" type="reset">Сбросить</button>
+<label class="check"><input type="checkbox" id="task-solved" name="solved" value="1"> Есть официальный материал</label>
+</form>
+<p class="count" id="task-count" role="status">Загружаем указатель…</p>
+<div class="task-grid" id="task-grid"></div>
+<div class="pagination" id="task-pager" hidden><button class="btn btn-line" id="task-prev">← Назад</button><span id="task-page"></span><button class="btn btn-line" id="task-next">Далее →</button></div>
+<noscript><p>Для поиска включите JavaScript. Все книги доступны в <a href="contents.html">оглавлении</a>.</p></noscript>
+</main>
+<footer class="footer"><div class="wrap"><span>Круг · библиотека олимпиадной математики</span><a href="books/00-start.pdf">Путеводитель PDF ↗</a></div></footer></body></html>

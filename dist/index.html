@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Круг — библиотека олимпиадной математики. 57 томов, теория и поиск по архивным задачам.">
+<title>Библиотека олимпиадной математики · Круг</title><link rel="icon" href="assets/mark.svg"><link rel="stylesheet" href="assets/site.css">
+<script defer src="assets/site.js"></script></head>
+<body><a class="skip" href="#main">К содержанию</a><header class="top"><div class="wrap"><a class="brand" href="index.html"><img src="assets/mark.svg" alt="" width="37" height="37">Круг</a><nav class="nav" aria-label="Основное меню"><a href="index.html" aria-current="page">Тома</a><a href="tasks.html">Задачи</a><a href="about.html">О библиотеке</a></nav></div></header>
+<main class="wrap" id="main">
+<section class="hero">
+<div class="hero-copy"><div class="eyebrow">Электронная библиотека</div><h1>Олимпиадная<br>математика</h1>
+<p>Теория, задачи и официальные разборы. Выберите класс, откройте нужный том или найдите задачу по условию.</p>
+<div class="actions"><a class="btn btn-light" href="#volumes">Выбрать том ↓</a><a class="btn btn-line" href="tasks.html">Найти задачу →</a></div></div>
+<img class="hero-art" src="assets/geometry.svg" alt="" width="520" height="460"></section>
+<div class="metrics" aria-label="Библиотека в цифрах">
+<div class="metric"><b id="stat-books">57</b><span>томов</span></div><div class="metric"><b id="stat-pages">9 699</b><span>страниц</span></div>
+<div class="metric"><b id="stat-tasks">8 089</b><span>записей задач</span></div><div class="metric"><b id="stat-study">20</b><span>учебных томов</span></div>
+</div>
+<section class="section"><div class="section-head"><div><div class="eyebrow">Учебная серия</div><h2>Начните с класса</h2><p>По пять томов на класс: теория, схемы, упражнения и разборы.</p></div></div>
+<div class="levels"><button class="level" type="button" data-level="8"><b>8 класс</b><span>5 томов →</span></button>
+<button class="level" type="button" data-level="9"><b>9 класс</b><span>5 томов →</span></button>
+<button class="level" type="button" data-level="10"><b>10 класс</b><span>5 томов →</span></button>
+<button class="level" type="button" data-level="11"><b>11 класс</b><span>5 томов →</span></button></div></section>
+<section class="section" id="volumes"><div class="section-head"><div><div class="eyebrow">Полное собрание</div><h2>Все тома</h2></div><a class="btn btn-line" href="books/00-start.pdf">Путеводитель PDF ↗</a></div>
+<div class="chips" id="kinds" aria-label="Тип тома"><button class="chip" data-kind="" aria-pressed="true">Все</button><button class="chip" data-kind="study" aria-pressed="false">Учебные</button><button class="chip" data-kind="practice" aria-pressed="false">Задачники</button><button class="chip" data-kind="solutions" aria-pressed="false">Разборы</button><button class="chip" data-kind="archive" aria-pressed="false">Архив</button></div>
+<div class="filters"><div class="field grow"><label for="volume-query">Название, тема или номер</label><input type="search" id="volume-query" placeholder="Например, геометрия или 55"></div><div class="field"><label for="volume-grade">Класс учебного тома</label><select id="volume-grade"><option value="">Все классы</option><option>8</option><option>9</option><option>10</option><option>11</option></select></div><button class="btn btn-line" id="volume-reset">Сбросить</button></div>
+<p class="count" id="volume-count" role="status">Загружаем оглавление…</p><div class="grid" id="volume-grid"></div></section>
+<noscript><p>Для фильтров нужен JavaScript. Откройте <a href="contents.html">простое оглавление</a>.</p></noscript>
+</main>
+<footer class="footer"><div class="wrap"><span>Круг · библиотека олимпиадной математики</span><a href="books/00-start.pdf">Путеводитель PDF ↗</a></div></footer></body></html>
