@@ -1,17 +1,98 @@
 """Run the same static site that can be published to Pages."""
 import argparse
+import json
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import threading
+import re
+from urllib.parse import urlsplit,parse_qs
 from urllib.request import urlopen
 import webbrowser
+from local_pdfs import LocalPDFs
 
 class LibraryHandler(SimpleHTTPRequestHandler):
     server_version='KrugLibrary/1'
     def list_directory(self,path):
         self.send_error(404,'Open index.html')
         return None
+
+    def local_request(self,post=False):
+        port=self.server.server_port
+        host=self.headers.get('Host')
+        valid=host in (f'127.0.0.1:{port}',f'localhost:{port}')
+        if not valid or self.headers.get('Sec-Fetch-Site')=='cross-site':return False
+        return not post or self.headers.get('Origin')=='http://'+host
+
+    def json(self,value,status=200):
+        body=json.dumps(value,ensure_ascii=False).encode('utf-8')
+        self.send_response(status)
+        self.send_header('Content-Type','application/json; charset=utf-8')
+        self.send_header('Cache-Control','no-store')
+        self.send_header('Content-Length',str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        path=urlsplit(self.path)
+        if path.path in ('/__krug/material','/__krug/status'):
+            if not self.local_request():return self.send_error(403)
+            q={k:v[0] for k,v in parse_qs(path.query).items()}
+            if path.path.endswith('/status'):return self.json(self.server.pdfs.state(q.get('key','')))
+            row=self.server.pdfs.material(q.get('source'),q.get('doc'))
+            return self.json({k:row[k] for k in ('href','lang')} if row else {'href':None})
+        return super().do_GET()
+
+    def do_POST(self):
+        if self.path!='/__krug/translate':return self.send_error(404)
+        if not self.local_request(post=True):return self.send_error(403)
+        try:
+            size=int(self.headers.get('Content-Length','0'))
+            if not 0<size<=8192:return self.send_error(413)
+            req=json.loads(self.rfile.read(size))
+            if not isinstance(req,dict) or any(not isinstance(v,str) for v in req.values()):
+                return self.send_error(400)
+        except (ValueError,UnicodeError):return self.send_error(400)
+        return self.json(self.server.pdfs.submit(req))
+
+    def send_head(self):
+        route=urlsplit(self.path).path
+        if not route.startswith('/__krug/'):return super().send_head()
+        if not self.local_request():self.send_error(403);return None
+        match=re.fullmatch(r'/__krug/(pdf|translated)/([0-9a-f]{64})\.pdf',route)
+        if match and self.server.pdfs.restricted(*match.groups()):
+            self.send_error(410,'Available only on the official school page')
+            return None
+        p=self.server.pdfs.file(*match.groups()) if match else None
+        if not p:self.send_error(404);return None
+        f=p.open('rb');size=p.stat().st_size;start,end=0,size-1
+        req=self.headers.get('Range')
+        if req:
+            m=re.fullmatch(r'bytes=(\d*)-(\d*)',req)
+            if m and (m[1] or m[2]):
+                start=int(m[1]) if m[1] else max(0,size-int(m[2]))
+                end=min(int(m[2]),size-1) if m[1] and m[2] else size-1
+            if not m or not (m[1] or m[2]) or start>end or start>=size:
+                f.close();self.send_response(416);self.send_header('Content-Range',f'bytes */{size}')
+                self.send_header('Content-Length','0');self.end_headers();return None
+        self.send_response(206 if req else 200)
+        self.send_header('Content-Type','application/pdf')
+        self.send_header('Content-Disposition','inline')
+        self.send_header('Accept-Ranges','bytes')
+        self.send_header('Content-Length',str(end-start+1))
+        if req:self.send_header('Content-Range',f'bytes {start}-{end}/{size}')
+        self.end_headers()
+        f.seek(start);self._bytes_remaining=end-start+1
+        return f
+
+    def copyfile(self,source,outputfile):
+        left=getattr(self,'_bytes_remaining',None)
+        if left is None:return super().copyfile(source,outputfile)
+        self._bytes_remaining=None
+        while left:
+            data=source.read(min(128*1024,left))
+            if not data:break
+            outputfile.write(data);left-=len(data)
 
 def main():
     parser=argparse.ArgumentParser()
@@ -32,6 +113,7 @@ def main():
         if args.open:webbrowser.open(url)
         return
     print('Сайт открыт:',url,flush=True)
+    server.pdfs=LocalPDFs(folder)
     if args.open:threading.Thread(target=webbrowser.open,args=(url,),daemon=True).start()
     with server:
         try:server.serve_forever()

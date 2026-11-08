@@ -1,0 +1,21 @@
+{
+  "letovo": {
+    "status": "draft",
+    "reason": "В демоверсиях школы указано ограничение на распространение за пределами letovo.ru.",
+    "reasonEn": "The school's sample papers restrict redistribution outside letovo.ru.",
+    "evidence": "https://letovo.ru/postuplenie/otvety-na-voprosy",
+    "officialPageOnly": true
+  },
+  "sunc": {
+    "status": "draft",
+    "reason": "В официальном архиве не найдено открытого разрешения на размещение копий и переводов.",
+    "reasonEn": "The official archive does not show an open permission to republish copies or translations.",
+    "evidence": "https://internat.msu.ru/for-abiturients/materials-exam1round/"
+  },
+  "school239": {
+    "status": "draft",
+    "reason": "В официальном архиве не найдено открытого разрешения на размещение копий и переводов.",
+    "reasonEn": "The official archive does not show an open permission to republish copies or translations.",
+    "evidence": "https://239.ru/vstup"
+  }
+}

@@ -2,8 +2,8 @@
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Круг — библиотека олимпиадной математики. 57 томов, теория и поиск по архивным задачам.">
 <title>Библиотека олимпиадной математики · Круг</title><link rel="icon" href="assets/mark.svg"><link rel="stylesheet" href="assets/site.css">
-<script defer src="assets/site.js"></script></head>
-<body><a class="skip" href="#main">К содержанию</a><header class="top"><div class="wrap"><a class="brand" href="index.html"><img src="assets/mark.svg" alt="" width="37" height="37">Круг</a><nav class="nav" aria-label="Основное меню"><a href="index.html" aria-current="page">Тома</a><a href="tasks.html">Задачи</a><a href="about.html">О библиотеке</a></nav></div></header>
+<script defer src="assets/locale.js"></script><script defer src="assets/pdf-local.js"></script><script defer src="assets/site.js"></script><script defer src="assets/archive.js"></script><script defer src="assets/offline.js"></script></head>
+<body><a class="skip" href="#main">К содержанию</a><header class="top"><div class="wrap"><a class="brand" href="index.html"><img src="assets/mark.svg" alt="" width="37" height="37">Круг</a><nav class="nav" aria-label="Основное меню"><a href="index.html" aria-current="page">Тома</a><a href="tasks.html">Задачи</a><a href="archives.html">Олимпиады</a><a href="schools.html">Поступление</a><a href="about.html">О библиотеке</a></nav><select id="site-language" class="language" aria-label="Язык / Language"><option value="auto">Auto</option><option value="ru">RU</option><option value="en">EN</option></select></div></header>
 <main class="wrap" id="main">
 <section class="hero">
 <div class="hero-copy"><div class="eyebrow">Электронная библиотека</div><h1>Олимпиадная<br>математика</h1>
@@ -14,6 +14,7 @@
 <div class="metric"><b id="stat-books">57</b><span>томов</span></div><div class="metric"><b id="stat-pages">9 699</b><span>страниц</span></div>
 <div class="metric"><b id="stat-tasks">8 089</b><span>записей задач</span></div><div class="metric"><b id="stat-study">20</b><span>учебных томов</span></div>
 </div>
+<section class="guide offline-box" aria-labelledby="offline-title"><div><strong id="offline-title">Библиотека без интернета</strong><p id="offline-status" role="status">Сохрани указатель сейчас, а нужные PDF — на странице чтения.</p></div><button class="btn btn-line" id="offline-save" type="button">Сохранить указатель</button></section>
 <section class="section"><div class="section-head"><div><div class="eyebrow">Учебная серия</div><h2>Начните с класса</h2><p>По пять томов на класс: теория, схемы, упражнения и разборы.</p></div></div>
 <div class="levels"><button class="level" type="button" data-level="8"><b>8 класс</b><span>5 томов →</span></button>
 <button class="level" type="button" data-level="9"><b>9 класс</b><span>5 томов →</span></button>
@@ -24,5 +25,6 @@
 <div class="filters"><div class="field grow"><label for="volume-query">Название, тема или номер</label><input type="search" id="volume-query" placeholder="Например, геометрия или 55"></div><div class="field"><label for="volume-grade">Класс учебного тома</label><select id="volume-grade"><option value="">Все классы</option><option>8</option><option>9</option><option>10</option><option>11</option></select></div><button class="btn btn-line" id="volume-reset">Сбросить</button></div>
 <p class="count" id="volume-count" role="status">Загружаем оглавление…</p><div class="grid" id="volume-grid"></div></section>
 <noscript><p>Для фильтров нужен JavaScript. Откройте <a href="contents.html">простое оглавление</a>.</p></noscript>
+<section class="support-banner" aria-labelledby="support-heading"><div><div class="eyebrow">Поддержка проекта</div><h2 id="support-heading">Поддержать автора</h2><p>Если «Круг» пригодился вам в подготовке, вы можете добровольно поддержать его автора.</p></div><a class="btn" href="support.html">Узнать, как поддержать →</a></section>
 </main>
-<footer class="footer"><div class="wrap"><span>Круг · библиотека олимпиадной математики</span><a href="books/00-start.pdf">Путеводитель PDF ↗</a></div></footer></body></html>
+<footer class="footer"><div class="wrap"><div>Круг · библиотека олимпиадной математики<br>Автор идеи — Степанов Павел</div><div class="footer-links"><a href="support.html">Поддержать автора</a><a href="permissions.html">Разрешения школ</a><a href="books/00-start.pdf">Путеводитель PDF ↗</a></div></div></footer></body></html>
