@@ -19,7 +19,7 @@ assert all(r['source'] in sources and external(r['url']) for r in archive['items
 school_sources={s['id'] for s in archive['sources'] if s['category']=='Вступительные'}
 permissions=json.loads((root/'catalog/permissions.json').read_text())
 assert permissions.keys()<=school_sources
-assert all(row['status'] in ('draft','sent') and external(row['evidence'])
+assert all(row['status'] in ('draft','sent','unconfirmed') and external(row['evidence'])
            for row in permissions.values())
 page_only={sid for sid,row in permissions.items() if row.get('officialPageOnly')}
 assert {s['id'] for s in archive['sources'] if s.get('officialPageOnly')}==page_only

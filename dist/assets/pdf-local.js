@@ -83,25 +83,38 @@ async function pdfLanguages({item,directory,request,href,page=0,originalNote,can
       return;
     }
     if(!localPDFServer||!canTranslate||!['ru','en'].includes(lang)){
-      $('pdf-translation-status').textContent=t('Для этого языка нет доступного перевода. Показан оригинал.','No translation is available for this language. Showing the original.');
+      $('pdf-translation-status').textContent=t('Для перевода нужна локальная копия PDF или официальная версия на выбранном языке.',
+          'Translation requires a local PDF copy or an official edition in the selected language.');
       return;
     }
-    const cacheKey='krug-pdf:layout:v1:'+JSON.stringify({...request,lang});
+    const cacheKey='krug-pdf:layout:v3:'+JSON.stringify({...request,lang});
     const show=(r)=>{
       setPDFViewer(r.href,page||1);
       $('read-note').textContent=r.curated
         ?t('Неофициальный английский перевод условий в исходном макете.','Unofficial English translation of the problems in the original layout.')
-        :t('Машинный перевод в исходном макете.','Machine translation in the original layout.');
+        :r.reviewed
+          ?t('Неофициальный перевод с проверенными фрагментами.','Unofficial translation with reviewed passages.')
+          :t('Машинный перевод в исходном макете.','Machine translation in the original layout.');
       $('pdf-translation-status').textContent=r.skipped
         ?t('Часть текста осталась на языке оригинала: её нельзя надёжно заменить в этом макете.',
           'Some text remains in the original language because it could not be safely replaced in this layout.')
         :'';
     };
     try{
-      const response=await fetch('__krug/translate',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({...request,lang})});
-      if(!response.ok)throw Error();
-      let result=await response.json();
+      const start=async()=>{
+        const response=await fetch('__krug/translate',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({...request,lang})});
+        if(!response.ok)throw Error();
+        return response.json();
+      };
+      let result=await start();
+      while(result.state==='busy'&&run===generation){
+        $('pdf-translation-status').textContent=t('Перевод в очереди… Пока доступен оригинал.',
+          'Translation queued… The original is available in the meantime.');
+        await new Promise(resolve=>setTimeout(resolve,3500));
+        if(run!==generation)return;
+        result=await start();
+      }
       const jobKey=result.key;
       while(result.state==='working'&&jobKey&&run===generation){
         $('pdf-translation-status').textContent=result.total
@@ -121,7 +134,12 @@ async function pdfLanguages({item,directory,request,href,page=0,originalNote,can
       else $('pdf-translation-status').textContent=t('Локальный перевод недоступен.','Local translation is unavailable.');
     }
   }
-  select.addEventListener('change',()=>load(select.value));
+  select.addEventListener('change',()=>{
+    const params=new URLSearchParams(location.search);
+    params.set('lang',select.value);
+    history.replaceState(null,'',location.pathname+'?'+params+location.hash);
+    load(select.value);
+  });
   const requested=new URLSearchParams(location.search).get('lang');
   const preferred=requested==='original'||choices.has(requested)?requested:
     choices.has(documentLanguage)?documentLanguage:siteLanguage;

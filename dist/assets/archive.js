@@ -17,7 +17,9 @@ async function archiveDirectory(){
       mmo:'Moscow Mathematical Olympiad',rosatom:'Rosatom',lomonosov:'Lomonosov Olympiad (MSU)',imo:'International Mathematical Olympiad (IMO)',
       euler:'Euler Olympiad',ommo:'Inter-University Mathematical Olympiad (OMMO)',phystech:'Phystech Olympiad',spb:'Saint Petersburg Mathematical Olympiad',
       matfest:'Mathematical Festival',turlom:'Lomonosov Tournament',memo:'Middle European Mathematical Olympiad (MEMO)',
-      bmo:'British Mathematical Olympiad (BMO)',balkan:'Balkan Mathematical Olympiad',letovo:'Letovo School',sunc:'Kolmogorov School (MSU)',school239:'Physics and Mathematics Lyceum No. 239'
+      bmo:'British Mathematical Olympiad (BMO)',balkan:'Balkan Mathematical Olympiad',letovo:'Letovo School',sunc:'Kolmogorov School (MSU)',school239:'Physics and Mathematics Lyceum No. 239',
+      'hse-lyceum':'HSE University Lyceum',pvg:'Conquer the Sparrow Hills! (MSU)',spbu:'SPbU School Olympiad',
+      belchonok:'Belchonok (Siberian Federal University)',kurchatov:'Kurchatov Olympiad'
     };
     const name=s=>t(s.name,names[s.id]||s.name);
     fill(fields.source,sources.map(s=>[s.id,name(s)]));
@@ -30,8 +32,8 @@ async function archiveDirectory(){
     fill(fields.lang,langs.map(c=>[c,langName(c)]));
     for(const [k,el] of Object.entries(fields))if(params.has(k==='query'?'q':k))el.value=params.get(k==='query'?'q':k);
     const key=s=>norm([s.id,s.name,name(s),s.aliases].join(' '));
-    const indexed=items.map(r=>({...r,grades:(r.grade||'').match(/\d+/g)?.map(Number)||[],
-      key:norm([key(byID.get(r.source)),r.title,r.year,r.grade,r.lang,r.kind==='solutions'?'решения solutions':r.kind==='combined'?'задачи решения problems solutions':'задачи problems'].join(' '))}));
+    const indexed=items.map(r=>({...r,grades:r.gradePages?Object.keys(r.gradePages).map(Number):(r.grade||'').match(/\d+/g)?.map(Number)||[],
+      key:norm([key(byID.get(r.source)),r.title,r.titleEn,r.subject==='math'?'математика mathematics math':'',r.year,r.grade,r.lang,r.kind==='solutions'?'решения solutions':r.kind==='combined'?'задачи решения problems solutions':'задачи problems'].join(' '))}));
     const grid=$('archive-files'),cards=$('archive-sources'),status=$('archive-count'),pager=$('archive-pager');
     let current=0,filtered=[];
     const size=24;
@@ -40,11 +42,20 @@ async function archiveDirectory(){
       const start=current*size,end=Math.min(start+size,filtered.length);
       grid.innerHTML=filtered.slice(start,end).map(r=>{
         const kind=r.kind==='solutions'?t('Решения / ответы','Solutions / answers'):r.kind==='combined'?t('Условия и решения','Problems and solutions'):t('Условия','Problems');
-        const parts=[name(byID.get(r.source)),r.year,r.grade?t('Класс ','Grade ')+r.grade:null,r.lang?langName(r.lang):null,kind].filter(Boolean);
+        const grade=fields.grade.value;
+        const parts=[r.stage?null:name(byID.get(r.source)),r.stage?null:r.year,
+          !r.stage&&r.grade?gradeLabel((r.gradePages?.[grade]&&grade)||r.grade):null,r.lang?langName(r.lang):null,kind].filter(Boolean);
         const rights=schools?'<p class="muted"><a href="permissions.html#'+esc(r.source)+'">'+esc(permissionLabel(permissions[r.source]))+'</a></p>':'';
-        const reader=!schools||localPDFServer?'<a class="btn" href="'+esc(readDocument(r.source,r.url))+'">'+t('Открыть на сайте','Read on site')+'</a>':'';
-        return '<article class="task"><div class="task-meta">'+parts.map(esc).join(' · ')+'</div><h2 class="archive-title">'+esc(r.title||kind)+'</h2>'+rights+'<div class="task-actions">'+reader+href(r.url,t('Оригинал','Original'))+'</div></article>';
+        const zip=new URL(r.url).pathname.toLowerCase().endsWith('.zip');
+        const external=schools&&permissions[r.source]?.externalOnly;
+        const reader=!r.unavailable&&!zip&&!external&&(!schools||localPDFServer)?'<a class="btn" href="'+esc(readDocument(r.source,r.url,grade))+'">'+t('Открыть на сайте','Read on site')+'</a>':'';
+        const original=r.unavailable
+          ?'<p class="muted">'+t('Файл недоступен у организатора.','The organiser’s file is unavailable.')+'</p>'+
+            href(byID.get(r.source).url,t('Архив организатора','Organiser’s archive'))
+          :href(r.url,zip?t('Скачать ZIP','Download ZIP'):t('Оригинал','Original'));
+        return '<article class="task"><div class="task-meta">'+parts.map(esc).join(' · ')+'</div><h2 class="archive-title">'+esc(archiveTitle(r,r.gradePages&&grade?r.gradePages[grade]&&grade:r.grade)||kind)+'</h2>'+rights+'<div class="task-actions">'+reader+original+'</div></article>';
       }).join('')||'<p class="empty">'+t('Документы по этим фильтрам не найдены. Откройте архив организаторов или измените запрос.','No documents match. Open the organisers’ archive or change the filters.')+'</p>';
+      translateCatalogue([...grid.querySelectorAll('.archive-title')].map((node,i)=>translatedText(node,filtered[start+i].titleEn?null:filtered[start+i].title)));
       pager.hidden=filtered.length<=size;
       $('archive-page').textContent=fmt(start+1)+'–'+fmt(end)+' '+t('из','of')+' '+fmt(filtered.length);
       $('archive-prev').disabled=current===0;$('archive-next').disabled=end>=filtered.length;
@@ -61,10 +72,10 @@ async function archiveDirectory(){
         return '<article class="volume archive-source"><strong>'+esc(name(s))+'</strong>'+
           (siteLanguage==='ru'&&s.note?'<small>'+esc(s.note)+'</small>':'')+
           '<div class="volume-bottom"><span>'+fmt(s.files)+' '+t('ссылок','links')+'</span><div class="actions"><a class="btn btn-line" href="'+esc(select)+'">'+t('Материалы','Materials')+'</a>'+
-          '<a class="btn btn-line" href="'+esc(schools&&!localPDFServer?s.url:readDocument(s.id,s.url))+'">'+t('Архив','Archive')+'</a></div></div></article>';
+          '<a class="btn btn-line" href="'+esc(schools&&(!localPDFServer||permissions[s.id]?.externalOnly)?s.url:readDocument(s.id,s.url))+'">'+t('Архив','Archive')+'</a></div></div></article>';
       }).join('');
       filtered=indexed.filter(r=>(!sid||r.source===sid)&&(!fields.year.value||String(r.year)===fields.year.value)&&
-        (!fields.lang.value||r.lang===fields.lang.value)&&(!grade||(r.grades.length&&grade>=Math.min(...r.grades)&&grade<=Math.max(...r.grades)))&&
+        (!fields.lang.value||r.lang===fields.lang.value)&&(!grade||(r.gradePages?r.grades.includes(grade):r.grades.length&&grade>=Math.min(...r.grades)&&grade<=Math.max(...r.grades)))&&
         query.every(w=>r.key.includes(w)));
       filtered.sort((a,b)=>(b.year||0)-(a.year||0)||Number(b.lang===documentLanguage)-Number(a.lang===documentLanguage)||a.title.localeCompare(b.title,siteLanguage));
       const state=new URLSearchParams();

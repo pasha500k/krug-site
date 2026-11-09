@@ -12,7 +12,7 @@ ROOT=PROJECT.parent
 DATA=ROOT/'data'
 RUNTIME=ROOT/'.venv-translate/bin/python'
 JOBS=DATA/'translated'
-RENDERER='krug-pdf-layout-v1'
+RENDERER='krug-pdf-layout-v3'
 HEX=re.compile(r'^[0-9a-f]{64}$')
 
 def read(path,default):
@@ -27,6 +27,14 @@ class LocalPDFs:
         self.memo={}
         self.hashes={}
         self.pool=ThreadPoolExecutor(max_workers=1)
+        self.background_pool=ThreadPoolExecutor(max_workers=1)
+
+    def models_ready(self):
+        return RUNTIME.is_file() and all((DATA/'translation-models'/pair/'model/model.bin').is_file()
+                                         for pair in ('en-ru','ru-en'))
+
+    def has_active_jobs(self):
+        with self.lock:return bool(self.active)
 
     def cached_json(self,path,default):
         try:stamp=path.stat().st_mtime_ns
@@ -41,7 +49,7 @@ class LocalPDFs:
 
     def page_only(self):
         permissions=self.cached_json(self.dist/'catalog/permissions.json',{})
-        return {sid for sid,row in permissions.items() if row.get('officialPageOnly')}
+        return {sid for sid,row in permissions.items() if row.get('officialPageOnly') or row.get('externalOnly')}
 
     def restricted(self,kind,key):
         if not HEX.fullmatch(key):return False
@@ -108,7 +116,7 @@ class LocalPDFs:
         if title.isdecimal():title=name+' · '+title+(' · класс '+row['grade'] if row.get('grade') else '')
         return row['path'],row['sha'],dict(title=title,organizer=name,url=row['url'],source=row.get('lang',''))
 
-    def submit(self,req):
+    def submit(self,req,background=False):
         target=req.get('lang')
         if target not in ('ru','en'):return {'state':'unavailable'}
         resolved=self.resolve(req)
@@ -116,25 +124,30 @@ class LocalPDFs:
         path,sha,meta=resolved
         if meta['source']==target:return {'state':'original'}
         if meta['source'] not in ('','en','ru'):return {'state':'unavailable'}
-        if not RUNTIME.is_file() or not all((DATA/'translation-models'/pair/'model/model.bin').is_file() for pair in ('en-ru','ru-en')):
+        if not self.models_ready():
             return {'state':'unavailable','reason':'models'}
         meta['target']=target
         payload=json.dumps(meta,ensure_ascii=False,sort_keys=True)
         key=hashlib.sha256((RENDERER+sha+payload).encode()).hexdigest()
         status=self.state(key)
         if status['state'] not in ('missing','error'):return dict(status,key=key)
+        if background and status['state']=='error':return dict(status,key=key)
         JOBS.mkdir(parents=True,exist_ok=True)
         with self.lock:
             if key not in self.active:
-                if len(self.active)>=6:return {'state':'busy'}
+                if (background and self.active) or len(self.active)>=6:return {'state':'busy'}
+                if read(JOBS/(key+'.json'),{}).get('state')=='ready' and (JOBS/(key+'.pdf')).is_file():
+                    return {'state':'working','key':key}
+                (JOBS/(key+'.json')).write_text('{"state":"working"}',encoding='utf-8')
                 self.active.add(key)
-                try:self.pool.submit(self.run,key,path,payload)
+                pool=self.background_pool if background else self.pool
+                try:pool.submit(self.run,key,path,payload,background)
                 except RuntimeError:
                     self.active.discard(key)
                     return {'state':'error'}
         return {'state':'working','key':key}
 
-    def run(self,key,path,payload):
+    def run(self,key,path,payload,background=False):
         state=JOBS/(key+'.json')
         spec=JOBS/(key+'.metadata.json')
         try:
@@ -142,7 +155,7 @@ class LocalPDFs:
             state.write_text('{"state":"working"}',encoding='utf-8')
             with (JOBS/(key+'.log')).open('wb') as log:
                 process=subprocess.run([str(RUNTIME),str(PROJECT/'tools/translate_pdf.py'),
-                    str(path),str(JOBS/(key+'.pdf')),str(spec),str(state)],
+                    str(path),str(JOBS/(key+'.pdf')),str(spec),str(state),*(['--background'] if background else [])],
                     stdout=log,stderr=log,timeout=3600)
             if process.returncode:raise RuntimeError('worker failed')
         except Exception:

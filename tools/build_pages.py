@@ -6,9 +6,10 @@ def page(name,title,body):
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Круг — библиотека олимпиадной математики. 57 томов, теория и поиск по архивным задачам.">
 <title>{title} · Круг</title><link rel="icon" href="assets/mark.svg"><link rel="stylesheet" href="assets/site.css">
-<script defer src="assets/locale.js"></script><script defer src="assets/pdf-local.js"></script><script defer src="assets/site.js"></script><script defer src="assets/archive.js"></script><script defer src="assets/offline.js"></script></head>
+<script defer src="assets/locale.js"></script><script defer src="assets/pdf-local.js"></script><script defer src="assets/text-local.js"></script><script defer src="assets/site.js"></script><script defer src="assets/archive.js"></script><script defer src="assets/offline.js"></script></head>
 <body><a class="skip" href="#main">К содержанию</a><header class="top"><div class="wrap"><a class="brand" href="index.html"><img src="assets/mark.svg" alt="" width="37" height="37">Круг</a><nav class="nav" aria-label="Основное меню">{nav}</nav><select id="site-language" class="language" aria-label="Язык / Language"><option value="auto">Auto</option><option value="ru">RU</option><option value="en">EN</option></select></div></header>
 <main class="wrap" id="main">{body}</main>
+<p id="site-translation-progress" class="wrap muted" hidden></p>
 <footer class="footer"><div class="wrap"><div>Круг · библиотека олимпиадной математики<br>Автор идеи — Степанов Павел</div><div class="footer-links"><a href="support.html">Поддержать автора</a><a href="permissions.html">Разрешения школ</a><a href="books/00-start.pdf">Путеводитель PDF ↗</a></div></div></footer></body></html>''',encoding='utf-8')
 page('index.html','Библиотека олимпиадной математики','''
 <section class="hero">
@@ -31,7 +32,7 @@ page('index.html','Библиотека олимпиадной математи�
 <div class="filters"><div class="field grow"><label for="volume-query">Название, тема или номер</label><input type="search" id="volume-query" placeholder="Например, геометрия или 55"></div><div class="field"><label for="volume-grade">Класс учебного тома</label><select id="volume-grade"><option value="">Все классы</option><option>8</option><option>9</option><option>10</option><option>11</option></select></div><button class="btn btn-line" id="volume-reset">Сбросить</button></div>
 <p class="count" id="volume-count" role="status">Загружаем оглавление…</p><div class="grid" id="volume-grid"></div></section>
 <noscript><p>Для фильтров нужен JavaScript. Откройте <a href="contents.html">простое оглавление</a>.</p></noscript>
-<section class="support-banner" aria-labelledby="support-heading"><div><div class="eyebrow">Поддержка проекта</div><h2 id="support-heading">Поддержать автора</h2><p>Если «Круг» пригодился вам в подготовке, вы можете добровольно поддержать его автора.</p></div><a class="btn" href="support.html">Узнать, как поддержать →</a></section>
+<section class="support-banner" aria-labelledby="support-heading"><div><div class="eyebrow">Поддержка проекта</div><h2 id="support-heading">Поддержать автора</h2><p>Это добровольное пожертвование автору. Все материалы и функции сайта бесплатны для всех, независимо от пожертвования.</p></div><a class="btn" href="support.html">Узнать, как поддержать →</a></section>
 ''')
 page('tasks.html','Поиск задач','''
 <header class="page-head"><div class="eyebrow">Архив олимпиад</div><h1>Найти задачу</h1><p>Ищите по словам, названию олимпиады, году и классу. Например: «ВсОШ 2025 треугольник».</p></header>
@@ -54,6 +55,7 @@ page('reader.html','Чтение тома','''
 <div class="page-head reader-head"><div><div class="eyebrow" id="read-meta">Библиотека</div><h1 id="read-title">Чтение тома</h1></div>
 <div class="actions" id="read-actions" hidden><a class="btn btn-line" id="read-source" target="_blank" rel="noopener noreferrer" hidden>Оригинал у источника ↗</a><a class="btn btn-line" id="read-direct" target="_blank" rel="noopener">Открыть PDF ↗</a><a class="btn" id="read-download" download>Скачать</a><button class="btn btn-line" id="offline-book" type="button">Сохранить для офлайна</button></div></div>
 <p id="read-permission" class="muted" hidden></p>
+<nav class="actions" id="read-grades" aria-label="Классы / Grades" hidden></nav>
 <p class="count" id="offline-book-status" role="status"></p>
 <div class="field pdf-language" id="read-language-field" hidden><label id="read-language-label" for="read-language">Язык PDF</label><select id="read-language"><option value="original">Оригинал</option></select></div>
 <p class="count" id="pdf-translation-status" role="status"></p>
@@ -67,14 +69,15 @@ page('about.html','О библиотеке','''
 <section class="guide"><h2>Файлы</h2><p>Каждый том — отдельный PDF. Простое оглавление даёт прямые ссылки на все книги, а путеводитель содержит маршрут чтения.</p><div class="actions"><a class="btn btn-line" href="contents.html">Все PDF</a><a class="btn btn-line" href="books/00-start.pdf">Путеводитель ↗</a></div></section></div>
 ''')
 page('support.html','Поддержать автора','''
-<div class="about"><header class="page-head"><div class="eyebrow">Поддержка проекта</div><h1>Поддержать автора</h1><p>Если сборник помог вам подготовиться к олимпиаде или разобраться в сложной теме, вы можете добровольно поддержать Павла Степанова, автора идеи «Круга».</p></header>
+<div class="about"><header class="page-head"><div class="eyebrow">Поддержка проекта</div><h1>Поддержать автора</h1></header>
 <section class="guide support-card" id="support-card" aria-labelledby="support-title">
-<div class="eyebrow">Добровольная поддержка</div>
+<div class="eyebrow">Добровольное пожертвование</div>
 <h2 id="support-title">Степанов Павел</h2>
+<p>Это добровольное пожертвование автору. Все материалы и функции сайта бесплатны для всех, независимо от пожертвования.</p>
 <p id="support-status" role="status">Ссылка для поддержки пока не подключена.</p>
-<a class="btn" id="support-link" target="_blank" rel="noopener noreferrer" hidden>Поддержать Павла ↗</a>
+<a class="btn" id="support-link" target="_blank" rel="noopener noreferrer" hidden>Сделать пожертвование ↗</a>
 </section>
-<section class="guide"><h2>Библиотека остаётся открытой</h2><p>Все тома и поиск доступны бесплатно. Если решите поддержать автора, перевод оформляется на странице платёжного сервиса, где можно проверить получателя и сумму.</p><a href="index.html">← Вернуться к библиотеке</a></section></div>
+<p><a href="index.html">← Вернуться к библиотеке</a></p></div>
 ''')
 
 def directory(schools=False):

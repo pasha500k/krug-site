@@ -1,6 +1,8 @@
 """Translate PDF prose on the original pages using local language models."""
 import argparse
+from functools import lru_cache
 import json
+import os
 from pathlib import Path
 import re
 
@@ -12,13 +14,14 @@ from translate_layout import translate
 ROOT=Path(__file__).resolve().parents[2]
 MODEL_ROOT=ROOT/'data/translation-models'
 MATH=re.compile(r'\$[^$\n]+\$|\\\([^\n]+?\\\)|(?<!\w)[A-Za-z](?!\w)|\b[A-Z]{2,4}\b|(?<!\w)[−-]?\d+(?:[.,]\d+)?(?!\w)|[=<>≤≥≠∑∏∫√±×÷∞π²³⁰¹⁴⁵⁶⁷⁸⁹]+')
+MIXED_MATH=re.compile(r'\b[A-Za-z][A-Za-z0-9_]*(?:-[A-Za-z0-9_]+)*\b|'+MATH.pattern)
 PLACEHOLDER=re.compile(r'QZ\s*(\d+)\s*ZQ',re.I)
-def mask(text):
+def mask(text,preserve_latin=False):
     values=[]
     def keep(match):
         values.append(match.group())
         return 'QZ'+str(len(values)-1)+'ZQ'
-    return MATH.sub(keep,text),values
+    return (MIXED_MATH if preserve_latin else MATH).sub(keep,text),values
 
 def restore(text,values):
     ids=[int(m[1]) for m in PLACEHOLDER.finditer(text)]
@@ -26,14 +29,17 @@ def restore(text,values):
     return PLACEHOLDER.sub(lambda m:values[int(m[1])],text)
 
 class Models:
-    def __init__(self):self.engines={}
-    def translate(self,source,target,text):
+    def __init__(self,threads=3):
+        self.engines={}
+        self.threads=threads
+    @lru_cache(maxsize=2048)
+    def translate(self,source,target,text,preserve_latin=False):
         if source==target:return text,True
         pair=source+'-'+target
         if pair not in self.engines:
             root=MODEL_ROOT/pair
             tok=sentencepiece.SentencePieceProcessor(model_file=str(root/'sentencepiece.model'))
-            eng=ctranslate2.Translator(str(root/'model'),device='cpu',compute_type='int8',intra_threads=3)
+            eng=ctranslate2.Translator(str(root/'model'),device='cpu',compute_type='int8',intra_threads=self.threads)
             self.engines[pair]=(tok,eng)
         tok,eng=self.engines[pair]
         pieces=[]
@@ -41,7 +47,7 @@ class Models:
             words=para.split()
             pieces.extend(' '.join(words[i:i+100]) for i in range(0,len(words),100))
         if not pieces:return text,True
-        masks=[mask(p) for p in pieces]
+        masks=[mask(p,preserve_latin) for p in pieces]
         inputs=[tok.encode(a,out_type=str) for a,_ in masks]
         limit=min(256,max(48,2*max(map(len,inputs))))
         out=eng.translate_batch(inputs,beam_size=2,max_input_length=512,max_decoding_length=limit)
@@ -67,5 +73,7 @@ def progress(path,**state):
 if __name__=='__main__':
     p=argparse.ArgumentParser()
     for name in ('pdf','result','meta','status'):p.add_argument(name,type=Path)
+    p.add_argument('--background',action='store_true')
     a=p.parse_args()
-    translate(a.pdf,a.result,json.loads(a.meta.read_text()),a.status,Models(),language,progress)
+    if a.background:os.nice(8)
+    translate(a.pdf,a.result,json.loads(a.meta.read_text()),a.status,Models(1 if a.background else 3),language,progress)

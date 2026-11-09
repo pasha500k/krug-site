@@ -24,7 +24,9 @@ function contestQuery(query){
 }
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const read=(file,page)=>'reader.html?'+new URLSearchParams({file,page});
-const readDocument=(source,doc)=>'reader.html?'+new URLSearchParams({source,doc});
+const readDocument=(source,doc,grade)=>'reader.html?'+new URLSearchParams(grade?{source,doc,grade}:{source,doc});
+const gradeLabel=grade=>t(grade+(/[–,]/.test(grade)?' классы':' класс'),(/[–,]/.test(grade)?'Grades ':'Grade ')+grade);
+const archiveTitle=(item,grade)=>[t(item.title,item.titleEn||item.title),item.stage&&grade?gradeLabel(grade):null].filter(Boolean).join(' · ');
 const types={study:t('Учебный том','Study volume'),practice:t('Тематический задачник','Topic problem book'),solutions:t('Официальные материалы','Official materials'),originals:t('Архивный оригинал','Original archive'),contexts:t('Кейсы DANO','DANO cases')};
 const fetchJSON=async path=>{const res=await fetch(path);if(!res.ok)throw Error(path);return res.json();};
 function fill(select,options){for(const [key,label] of options)select.add(new Option(label,key));}
@@ -45,9 +47,11 @@ function shelf(data){
     grid.innerHTML=selected.map(([v])=>{
       const number=String(v.number).padStart(2,'0');
       return '<a class="volume" data-kind="'+esc(v.kind)+'" href="'+esc(read(v.file,1))+'"><div class="volume-top"><span class="volume-no">'+number+
-        '</span><small>'+esc(v.grade?t(v.grade+' класс','Grade '+v.grade):types[v.kind]||t('Том','Volume'))+'</small></div><strong>'+esc(v.title)+
+        '</span><small>'+esc(v.grade?t(v.grade+' класс','Grade '+v.grade):types[v.kind]||t('Том','Volume'))+'</small></div><strong data-catalogue-title>'+esc(v.title)+
         '</strong><div class="volume-bottom"><span>'+fmt(v.pages)+t(' стр.',' pp.')+'</span><span>'+t('Читать ↗','Read ↗')+'</span></div></a>';
     }).join('')||'<p class="empty">'+t('По этим фильтрам нет томов. Попробуйте изменить запрос.','No volumes match these filters.')+'</p>';
+    translateCatalogue([...grid.querySelectorAll('[data-catalogue-title]')].map((node,i)=>translatedText(node,selected[i][0].title)));
+
   }
   function selectKind(value){kind=value;for(const c of chips)c.setAttribute('aria-pressed',String(c.dataset.kind===value));}
   chips.forEach(c=>c.addEventListener('click',()=>{selectKind(c.dataset.kind);if(kind!=='study')grade.value='';paint();}));
@@ -103,11 +107,32 @@ async function browserReader(data){
   $('read-back').href=(source.category==='Вступительные'?'schools.html':'archives.html')+'?'+new URLSearchParams({source:sid});
   $('read-back').textContent=t('← К материалам','← Back to materials');
   $('read-back-row').hidden=false;
-  $('read-source').href=official.href;
+  const gradePages=item?.gradePages||{};
+  const grades=Object.keys(gradePages).sort((a,b)=>Number(a)-Number(b));
+  const requestedGrade=params.get('grade');
+  const activeGrade=grades.includes(requestedGrade)?requestedGrade:grades[0];
+  const sourcePage=activeGrade?gradePages[activeGrade]:0;
+  $('read-source').href=official.href+(sourcePage?'#page='+sourcePage:'');
   $('read-source').textContent=source.officialPageOnly?officialPageLabel()+' ↗':t('Оригинал у источника ↗','Open official original ↗');
   $('read-source').hidden=false;
-  $('read-title').textContent=item?.title||source.name;
-  $('read-meta').textContent=[source.name,item?.year,item?.grade].filter(Boolean).join(' · ');
+  $('read-title').textContent=item?archiveTitle(item,activeGrade||item.grade):source.name;
+  $('read-meta').textContent=item?.stage
+    ?(grades.length>1?t('Классы в PDF: ','Grades in this PDF: ')+grades.join(', '):'')
+    :[source.name,item?.year,activeGrade||item?.grade?gradeLabel(activeGrade||item.grade):null].filter(Boolean).join(' · ');
+  if(grades.length>1){
+    const nav=$('read-grades');
+    nav.hidden=false;
+    for(const grade of grades){
+      const link=document.createElement('a');
+      link.className='btn btn-line';
+      link.textContent=gradeLabel(grade);
+      const destination=()=>{const options=new URLSearchParams(location.search);options.set('grade',grade);return '?'+options;};
+      link.href=destination();
+      link.addEventListener('click',()=>{link.href=destination();});
+      if(grade===activeGrade)link.setAttribute('aria-current','page');
+      nav.append(link);
+    }
+  }
   document.title=$('read-title').textContent+' · Круг';
   if(schoolSource(source)){
     const info=(await schoolPermissions())[sid];
@@ -118,24 +143,40 @@ async function browserReader(data){
     details.href='permissions.html#'+encodeURIComponent(sid);
     details.textContent=t('Подробнее','Details');
     status.append(details);
-    if(source.officialPageOnly||!localPDFServer){
+    if(source.officialPageOnly||info?.externalOnly||!localPDFServer){
       for(const id of ['read-direct','read-download','offline-book'])$(id).hidden=true;
       $('read-actions').hidden=false;
       $('read-note').textContent=officialPageNote();
       return;
     }
   }
+  if(item?.unavailable){
+    $('read-source').href=source.url;
+    $('read-source').textContent=t('Архив организатора ↗','Organiser’s archive ↗');
+    for(const id of ['read-direct','read-download','offline-book'])$(id).hidden=true;
+    $('read-actions').hidden=false;
+    $('read-note').textContent=t('Файл недоступен у организатора.','The organiser’s file is unavailable.');
+    return;
+  }
+  if(official.pathname.toLowerCase().endsWith('.zip')){
+    $('read-source').textContent=t('Скачать ZIP у организатора ↗','Download the official ZIP ↗');
+    for(const id of ['read-direct','read-download','offline-book'])$(id).hidden=true;
+    $('read-actions').hidden=false;
+    $('read-note').textContent=t('Комплект доступен в ZIP-архиве организатора.','The organiser provides this collection as a ZIP archive.');
+    return;
+  }
   const links=await fetchJSON('catalog/book-documents.json').catch(()=>({}));
   const entry=Object.hasOwn(links,url)?links[url]:null;
   const volume=entry&&data.volumes.find(v=>v.file===entry[0]);
   const local=await localPDFMaterial(sid,url);
+  const bookPage=volume?entry[1]+Math.min(entry[2]-1,Math.max(0,sourcePage-1)):0;
   if(local){
-    setPDFViewer(local.href,1);
+    setPDFViewer(local.href,sourcePage||1);
     $('read-note').textContent=t('Локальная копия оригинала. Организатор: ','Local copy of the original. Organiser: ')+source.name+'.';
   }else if(volume){
-    showBook(volume,entry[1]);
-    $('read-note').textContent=t('Полный документ в томе № '+volume.number+', начиная со страницы '+entry[1]+'.',
-      'Full document in volume '+volume.number+', starting at page '+entry[1]+'.');
+    setPDFViewer('books/'+encodeURIComponent(volume.file),bookPage);
+    $('read-note').textContent=t('Документ в томе № '+volume.number+', страница '+bookPage+'.',
+      'Document in volume '+volume.number+', page '+bookPage+'.');
   }else{
     for(const id of ['read-direct','read-download','offline-book'])$(id).hidden=true;
     $('read-actions').hidden=false;
@@ -143,7 +184,7 @@ async function browserReader(data){
     if(!mixed){
       $('read-frame').referrerPolicy='no-referrer';
       $('read-frame').title=t('Документ с официального сайта','Document from the official website');
-      $('read-frame').src=official.href;
+      $('read-frame').src=$('read-source').href;
       $('read-frame').hidden=false;
     }
     $('read-note').textContent=mixed
@@ -154,7 +195,7 @@ async function browserReader(data){
   if(item){
     await pdfLanguages({item,directory,request:{source:sid,doc:url},canTranslate:!!local,
       href:local?.href||(volume?'books/'+encodeURIComponent(volume.file):official.href),
-      page:local?1:volume?entry[1]:0,originalNote:$('read-note').textContent});
+      page:local?sourcePage||1:volume?bookPage:sourcePage,originalNote:$('read-note').textContent});
   }
 }
 async function taskSearch(data){
@@ -165,6 +206,7 @@ async function taskSearch(data){
   const years=[...new Set(records.map(r=>r.year).filter(Boolean))].sort((a,b)=>b-a);
   fill(topic,Object.entries(data.topics));
   fill(source,Object.entries(data.sources).sort((a,b)=>a[1].localeCompare(b[1],'ru')));
+  translateCatalogue([...topic.options,...source.options].filter(node=>node.value).map(node=>translatedText(node,node.textContent)));
   fill(grade,Array.from({length:7},(_,i)=>[String(5+i),String(5+i)]));
   fill(year,years.map(y=>[String(y),String(y)]));
   const initial=new URLSearchParams(location.search);
@@ -184,10 +226,10 @@ async function taskSearch(data){
     const preview=short?r.text.slice(0,360).trimEnd()+'…':r.text;
     const meta=[data.sources[r.source],r.year,r.grade?t('Класс ','Grade ')+r.grade:null,r.n?'№ '+r.n:null].filter(Boolean);
     const allLinks=r.solutions.map(s=>button(s,s[2]?t('Официальные материалы','Official material'):t('Возможный разбор','Suggested solution')));
-    const full=short?'<details><summary>'+t('Показать полный извлечённый текст','Show full extracted text')+'</summary><div class="snippet">'+esc(r.text)+'</div></details>':'';
+    const full=short?'<details><summary>'+t('Показать полный извлечённый текст','Show full extracted text')+'</summary><div class="snippet" data-translate-full>'+esc(r.text)+'</div></details>':'';
     const versions=r.year&&['imo','egmo'].includes(r.source)?'<a class="btn btn-line" href="archives.html?'+esc(new URLSearchParams({source:r.source,year:r.year}).toString())+'">'+t('Языковые версии','Language editions')+'</a>':'';
     return '<article class="task"><div class="task-meta"><a class="tag" href="tasks.html?q='+encodeURIComponent(r.id)+'">'+esc(r.id)+'</a>'+
-      meta.map(x=>'<span>'+esc(x)+'</span>').join(' · ')+'</div><h2>'+title(r)+'</h2><div class="snippet">'+esc(preview)+'</div>'+full+
+      meta.map(x=>'<span>'+esc(x)+'</span>').join(' · ')+'</div><h2 data-translate-topic>'+title(r)+'</h2><div class="snippet" data-translate-preview>'+esc(preview)+'</div>'+full+
       '<div class="task-actions">'+(r.at?button(r.at,t('Условие','Problem'),true):'')+(r.original?button(r.original,t('Полный оригинал','Full original'),!r.at):'')+
       allLinks.slice(0,2).join('')+(r.url?'<a class="btn btn-line" href="'+esc(readDocument(r.source,r.url))+'">'+t('Документ источника','Source document')+'</a>':'')+versions+
       '</div>'+(allLinks.length>2?'<details><summary>'+t('Другие найденные материалы','Other materials')+' ('+(allLinks.length-2)+')</summary><div class="task-actions">'+allLinks.slice(2).join('')+'</div></details>':'')+'</article>';
@@ -196,6 +238,20 @@ async function taskSearch(data){
     const start=page*size,end=Math.min(start+size,selected.length);
     status.textContent=t('Найдено записей: ','Problems found: ')+fmt(selected.length);
     grid.innerHTML=selected.slice(start,end).map(card).join('')||'<p class="empty">'+t('Задачи не найдены. ','No problems found. ')+'<a href="archives.html?q='+encodeURIComponent(q.value)+'">'+t('Проверить официальные архивы','Search official archives')+'</a>.</p>';
+    const visible=selected.slice(start,end);
+    translateCatalogue([...grid.querySelectorAll('article.task')].flatMap((article,i)=>{
+      const row=visible[i], preview=article.querySelector('[data-translate-preview]');
+      return [
+        translatedText(article.querySelector('[data-translate-topic]'),data.topics[row.topic]),
+        translatedText(preview,row.text,value=>{
+          const full=article.querySelector('[data-translate-full]');
+          preview.textContent=full&&value.length>360?value.slice(0,360).trimEnd()+'…':value;
+          preview.title=t('Машинный перевод. Отдельные фрагменты могут остаться на языке оригинала.',
+            'Machine translation. Some fragments may remain in the original language.');
+          if(full)full.textContent=value;
+        })
+      ];
+    }));
     $('task-pager').hidden=selected.length<=size;
     $('task-page').textContent=fmt(start+1)+'–'+fmt(end)+t(' из ',' of ')+fmt(selected.length);
     $('task-prev').disabled=page===0;$('task-next').disabled=end>=selected.length;

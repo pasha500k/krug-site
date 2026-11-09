@@ -9,6 +9,7 @@ import re
 from urllib.parse import urlsplit,parse_qs
 from urllib.request import urlopen
 import webbrowser
+from background_translation import BackgroundTranslation
 from local_pdfs import LocalPDFs
 
 class LibraryHandler(SimpleHTTPRequestHandler):
@@ -35,9 +36,15 @@ class LibraryHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path=urlsplit(self.path)
-        if path.path in ('/__krug/material','/__krug/status'):
+        if path.path in ('/__krug/material','/__krug/status','/__krug/text','/__krug/translation-progress'):
             if not self.local_request():return self.send_error(403)
-            q={k:v[0] for k,v in parse_qs(path.query).items()}
+            try:query=parse_qs(path.query,max_num_fields=80)
+            except ValueError:return self.send_error(400)
+            q={k:v[0] for k,v in query.items()}
+            if path.path=='/__krug/text':
+                return self.json(self.server.translations.text_results(q.get('lang',''),query.get('key',[])))
+            if path.path=='/__krug/translation-progress':
+                return self.json(self.server.translations.progress(q.get('lang','en')))
             if path.path.endswith('/status'):return self.json(self.server.pdfs.state(q.get('key','')))
             row=self.server.pdfs.material(q.get('source'),q.get('doc'))
             return self.json({k:row[k] for k in ('href','lang')} if row else {'href':None})
@@ -98,6 +105,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--port',type=int,default=8780)
     parser.add_argument('--open',action='store_true',help='Открыть в браузере')
+    parser.add_argument('--no-background-translation',action='store_true')
     args=parser.parse_args()
     folder=Path(__file__).resolve().parent/'dist'
     url=f'http://127.0.0.1:{args.port}/'
@@ -114,8 +122,11 @@ def main():
         return
     print('Сайт открыт:',url,flush=True)
     server.pdfs=LocalPDFs(folder)
+    server.translations=BackgroundTranslation(server.pdfs)
+    if not args.no_background_translation:server.translations.start()
     if args.open:threading.Thread(target=webbrowser.open,args=(url,),daemon=True).start()
     with server:
         try:server.serve_forever()
         except KeyboardInterrupt:pass
+        finally:server.translations.stop.set()
 if __name__=='__main__':main()

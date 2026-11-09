@@ -17,5 +17,12 @@
     "reason": "В официальном архиве не найдено открытого разрешения на размещение копий и переводов.",
     "reasonEn": "The official archive does not show an open permission to republish copies or translations.",
     "evidence": "https://239.ru/vstup"
+  },
+  "hse-lyceum": {
+    "status": "unconfirmed",
+    "externalOnly": true,
+    "reason": "Материалы открываются на сайте Лицея. Разрешение на публикацию копий и переводов не подтверждено.",
+    "reasonEn": "Materials open on the Lyceum website. Permission to republish copies or translations is unconfirmed.",
+    "evidence": "https://school.hse.ru/demoversion"
   }
 }

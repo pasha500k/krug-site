@@ -8,3 +8,5 @@ monitor/status.json
 # Local correspondence and translations awaiting permission.
 /permissions/
 /tools/layout-239-en.json
+/tools/layout-dano-en.json
+/tools/layout-vosh-en.json
