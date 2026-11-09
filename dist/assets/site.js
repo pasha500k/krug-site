@@ -289,7 +289,35 @@ async function supportPage(){
     // Keep the inactive notice if the configuration is unavailable.
   }
 }
+function studyRoute(){
+  const route=$('number-route');
+  document.title=t('Числа и делимость · Круг','Numbers and divisibility · Krug');
+  const storageKey='krug-study:numbers:v1';
+  const progress=$('route-progress');
+  const tasks=[...route.querySelectorAll('input[data-route-id]')];
+  let saved=[];
+  try{
+    const value=JSON.parse(localStorage.getItem(storageKey)||'[]');
+    if(Array.isArray(value))saved=value;
+  }catch{}
+  function update(){
+    const done=tasks.filter(task=>task.checked).map(task=>task.dataset.routeId);
+    progress.textContent=t('Решено ','Solved ')+fmt(done.length)+t(' из ',' of ')+fmt(tasks.length);
+    return done;
+  }
+  for(const task of tasks){
+    task.checked=saved.includes(task.dataset.routeId);
+    task.closest('label').hidden=false;
+    task.addEventListener('change',()=>{
+      const done=update();
+      try{localStorage.setItem(storageKey,JSON.stringify(done));}catch{}
+    });
+  }
+  update();
+  progress.hidden=false;
+}
 (async()=>{
+  if($('number-route')){studyRoute();return;}
   if($('support-card')){await supportPage();return;}
   if(!($('volume-grid')||$('task-grid')||$('read-frame')))return;
   try{

@@ -19,7 +19,10 @@ async function archiveDirectory(){
       matfest:'Mathematical Festival',turlom:'Lomonosov Tournament',memo:'Middle European Mathematical Olympiad (MEMO)',
       bmo:'British Mathematical Olympiad (BMO)',balkan:'Balkan Mathematical Olympiad',letovo:'Letovo School',sunc:'Kolmogorov School (MSU)',school239:'Physics and Mathematics Lyceum No. 239',
       'hse-lyceum':'HSE University Lyceum',pvg:'Conquer the Sparrow Hills! (MSU)',spbu:'SPbU School Olympiad',
-      belchonok:'Belchonok (Siberian Federal University)',kurchatov:'Kurchatov Olympiad'
+      belchonok:'Belchonok (Siberian Federal University)',kurchatov:'Kurchatov Olympiad',
+      vsesib:'All-Siberian Open Olympiad (Novosibirsk State University)',sharygin:'Sharygin Geometry Olympiad',
+      archimed:'Archimedes Mathematical Tournament',cmo:'Canadian Mathematical Olympiad',
+      cjmo:'Canadian Junior Mathematical Olympiad',ukmog:'UK Mathematical Olympiad for Girls'
     };
     const name=s=>t(s.name,names[s.id]||s.name);
     fill(fields.source,sources.map(s=>[s.id,name(s)]));

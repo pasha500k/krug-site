@@ -1,8 +1,8 @@
 'use strict';
 const scope=self.registration.scope;
 const appPrefix='krug-app:'+scope+':';
-const APP=appPrefix+'v13',BOOKS='krug-books:'+scope+':v1';
-const shell=['index.html','tasks.html','reader.html','about.html','support.html','archives.html','schools.html','permissions.html','contents.html',
+const APP=appPrefix+'v15',BOOKS='krug-books:'+scope+':v1';
+const shell=['index.html','tasks.html','reader.html','about.html','support.html','archives.html','schools.html','permissions.html','learn-numbers.html','contents.html',
   'assets/site.css','assets/site.js','assets/archive.js','assets/locale.js','assets/offline.js','assets/pdf-local.js','assets/text-local.js','assets/geometry.svg','assets/mark.svg',
   'catalog/library.json','catalog/archives.json','catalog/book-documents.json','catalog/support.json','catalog/permissions.json'];
 const urlOf=path=>new URL(path,scope).href;

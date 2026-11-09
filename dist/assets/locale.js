@@ -3,11 +3,17 @@ const deviceLocale=navigator.languages?.[0]||navigator.language||'ru';
 let languageChoice='auto';
 try{languageChoice=localStorage.getItem('krug-language')||'auto';}catch{}
 if(!['ru','en','auto'].includes(languageChoice))languageChoice='auto';
+const routePage=document.getElementById('number-route');
+const routeLanguage=routePage&&new URLSearchParams(location.search).get('lang');
+if(['ru','en'].includes(routeLanguage))languageChoice=routeLanguage;
 const documentLanguage=languageChoice==='auto'?deviceLocale.toLowerCase().split('-')[0]:languageChoice;
 const siteLanguage=documentLanguage==='ru'?'ru':'en';
 const t=(ru,en)=>siteLanguage==='ru'?ru:en;
 const lex={
  'Круг':'Krug','К содержанию':'Skip to content','Тома':'Volumes','Задачи':'Problems','Олимпиады':'Olympiads','Поступление':'Admissions','О библиотеке':'About',
+ 'Учебный маршрут':'Study route','Числа и делимость':'Numbers and divisibility',
+ 'Шесть задач на трёх уровнях. Подсказки и разборы на русском и английском.':'Six problems at three levels, with hints and worked solutions in Russian and English.',
+ 'Начать маршрут →':'Start the route →',
  'Круг · библиотека олимпиадной математики':'Krug · Olympiad Mathematics Library','Автор идеи — Степанов Павел':'Project idea by Pavel Stepanov',
  'Путеводитель PDF ↗':'PDF guide ↗','Поддержать автора':'Support the author','Электронная библиотека':'Digital library','Олимпиадная':'Olympiad','математика':'mathematics',
  'Теория, задачи и официальные разборы. Выберите класс, откройте нужный том или найдите задачу по условию.':'Theory, problems and official solutions. Choose a grade, open a volume, or find a problem by keywords.',
@@ -45,13 +51,21 @@ function localize(){
   const select=document.getElementById('site-language');
   if(select){
     select.value=languageChoice;
-    select.addEventListener('change',()=>{try{localStorage.setItem('krug-language',select.value);location.reload();}catch{}});
+    select.addEventListener('change',()=>{
+      try{localStorage.setItem('krug-language',select.value);}catch{}
+      if(routePage){
+        const url=new URL(location.href);
+        if(select.value==='auto')url.searchParams.delete('lang');
+        else url.searchParams.set('lang',select.value);
+        location.assign(url.href);
+      }else location.reload();
+    });
   }
   if(siteLanguage==='ru')return;
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
   while(walker.nextNode()){
     const node=walker.currentNode;
-    if(node.parentElement?.closest('script,style'))continue;
+    if(node.parentElement?.closest('script,style,.route-copy'))continue;
     const text=node.nodeValue.trim();
     if(lex[text])node.nodeValue=node.nodeValue.replace(text,lex[text]);
   }

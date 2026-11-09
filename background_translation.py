@@ -27,6 +27,8 @@ def official_group(row):
         pattern = r'/assets/documents/problems/(\d{4})/\1_[a-z]+\.pdf'
     elif row['source'] == 'egmo':
         pattern = r'/egmos/(egmo\d+)/paper-(day[12])-[a-z]+\.pdf'
+    elif row['source'] == 'rmm':
+        pattern = r'/rmm20\d{2}/[^/]+/RMM(20\d{2})-Day([12])-[a-z]+(?:[-_]?Solutions)?\.pdf'
     else:
         return None
     match = re.fullmatch(pattern, path, re.I)
@@ -142,7 +144,7 @@ class BackgroundTranslation:
         dist = self.pdfs.dist / 'catalog'
         sources = self.pdfs.cached_json(dist / 'archives.json', {}).get('items', [])
         official = {(official_group(row), row.get('lang')) for row in sources
-                    if row['source'] in ('imo', 'egmo')}
+                    if row['source'] in ('imo', 'egmo', 'rmm')}
         blocked = self.pdfs.page_only()
         originals = sorted(self.pdfs.mirror().values(),
                            key=lambda row: (-(row.get('year') or 0), row.get('kind') != 'problems', row['url']))

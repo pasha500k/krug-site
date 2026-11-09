@@ -1,4 +1,5 @@
 from pathlib import Path
+from numbers_route import numbers_route
 root=Path(__file__).resolve().parents[1]/'dist'
 def page(name,title,body):
     nav=''.join(f'<a href="{file}"'+(' aria-current="page"' if name==file else '')+f'>{label}</a>' for file,label in [('index.html','Тома'),('tasks.html','Задачи'),('archives.html','Олимпиады'),('schools.html','Поступление'),('about.html','О библиотеке')])
@@ -22,6 +23,7 @@ page('index.html','Библиотека олимпиадной математи�
 <div class="metric"><b id="stat-tasks">8 089</b><span>записей задач</span></div><div class="metric"><b id="stat-study">20</b><span>учебных томов</span></div>
 </div>
 <section class="guide offline-box" aria-labelledby="offline-title"><div><strong id="offline-title">Библиотека без интернета</strong><p id="offline-status" role="status">Сохрани указатель сейчас, а нужные PDF — на странице чтения.</p></div><button class="btn btn-line" id="offline-save" type="button">Сохранить указатель</button></section>
+<section class="guide route-entry" aria-labelledby="route-heading"><div><div class="eyebrow">Учебный маршрут</div><h2 id="route-heading">Числа и делимость</h2><p>Шесть задач на трёх уровнях. Подсказки и разборы на русском и английском.</p></div><a class="btn" href="learn-numbers.html">Начать маршрут →</a></section>
 <section class="section"><div class="section-head"><div><div class="eyebrow">Учебная серия</div><h2>Начните с класса</h2><p>По пять томов на класс: теория, схемы, упражнения и разборы.</p></div></div>
 <div class="levels"><button class="level" type="button" data-level="8"><b>8 класс</b><span>5 томов →</span></button>
 <button class="level" type="button" data-level="9"><b>9 класс</b><span>5 томов →</span></button>
@@ -110,3 +112,5 @@ page('permissions.html','Разрешения школ','''
 <div id="permission-schools" class="task-grid"></div>
 <p><a href="schools.html">← К вступительным испытаниям</a></p>
 ''')
+
+page('learn-numbers.html','Числа и делимость',numbers_route())

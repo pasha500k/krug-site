@@ -30,6 +30,10 @@ function versionGroup(item){
     const m=path.match(/^\/egmos\/(egmo\d+)\/paper-(day[12])-[a-z]+\.pdf$/i);
     return m?'egmo-'+m[1]+'-'+m[2]:'';
   }
+  if(item.source==='rmm'){
+    const m=path.match(/\/RMM(20\d{2})-Day([12])-[a-z]+(?:[-_]?Solutions)?\.pdf$/i);
+    return m?'rmm-'+m[1]+'-'+m[2]:'';
+  }
   return '';
 }
 function setPDFViewer(href,page,local=true){
