@@ -10,10 +10,11 @@ const documentLanguage=languageChoice==='auto'?deviceLocale.toLowerCase().split(
 const siteLanguage=documentLanguage==='ru'?'ru':'en';
 const t=(ru,en)=>siteLanguage==='ru'?ru:en;
 const lex={
+ 'Физика':'Physics',
  'Круг':'Krug','К содержанию':'Skip to content','Тома':'Volumes','Задачи':'Problems','Олимпиады':'Olympiads','Поступление':'Admissions','О библиотеке':'About',
  'Учебный маршрут':'Study route','Числа и делимость':'Numbers and divisibility',
- 'Шесть задач на трёх уровнях. Подсказки и разборы на русском и английском.':'Six problems at three levels, with hints and worked solutions in Russian and English.',
- 'Начать маршрут →':'Start the route →',
+ 'Три уровня сложности. Подсказки, разборы и новая задача на тот же метод.':'Three levels, with hints, worked solutions and a new problem using the same method.',
+ 'Начать тренировку →':'Start training →',
  'Круг · библиотека олимпиадной математики':'Krug · Olympiad Mathematics Library','Автор идеи — Степанов Павел':'Project idea by Pavel Stepanov',
  'Путеводитель PDF ↗':'PDF guide ↗','Поддержать автора':'Support the author','Электронная библиотека':'Digital library','Олимпиадная':'Olympiad','математика':'mathematics',
  'Теория, задачи и официальные разборы. Выберите класс, откройте нужный том или найдите задачу по условию.':'Theory, problems and official solutions. Choose a grade, open a volume, or find a problem by keywords.',
@@ -30,6 +31,7 @@ const lex={
  'Официальные источники':'Official sources','Архивы олимпиад':'Olympiad archives','Вступительные испытания':'School entrance exams',
  'Выберите олимпиаду, год или язык. Здесь собраны ссылки на официальные условия, разборы и архивы.':'Choose a contest, year or language. Find official papers, solutions and archives.',
  'Демоверсии и варианты прошлых лет по математике со ссылками на сайты школ.':'Browse sample and past mathematics papers on school websites.',
+ 'Для каждой школы отдельно указаны разрешённые способы использования. Если разрешение требует сохранять оригинал, перевод заданий отключён. Статус «На согласовании» появляется после отправки обращения.':'Permitted uses are listed separately for each school. When permission requires preserving the original, task translation is disabled. Requests are marked pending after they have been sent.',
  'Разрешения школ':'School permissions','Статус разрешений школ':'School permission status','← К вступительным испытаниям':'← Back to entrance exams',
  'Здесь указан статус разрешения на публикацию оригинальных PDF и английских переводов.':'Permission status for publishing original PDFs and English translations.',
  'Пока разрешения не подтверждены, публичный каталог ведёт к оригиналам на сайтах школ. Статус «На согласовании» появляется после отправки обращения.':'Until permission is confirmed, the public catalogue links to the school originals. A request is marked as pending after it has been sent.',
@@ -44,7 +46,7 @@ const lex={
  'Перейти к томам':'Browse volumes','Условия и разборы':'Problems and solutions','В указателе есть повторы и языковые версии. Темы размечены автоматически. Если условие нельзя надёжно выделить, откройте полный оригинал. Ссылки на возможные разборы помечены отдельно: проверяйте год, класс и номер задачи.':'The catalogue includes duplicates and language editions. Topics are assigned automatically. Open the original when extraction is uncertain. Check the year, grade and problem number on suggested solutions.',
  'Открыть поиск':'Open search','Файлы':'Files','Каждый том — отдельный PDF. Простое оглавление даёт прямые ссылки на все книги, а путеводитель содержит маршрут чтения.':'Each volume is a separate PDF. The plain contents page links directly to every volume, and the guide suggests a reading route.',
  'Все PDF':'All PDFs','Путеводитель ↗':'Guide ↗',
- 'Например, геометрия или 55':'Example: geometry or 55','Например, вписанный угол':'Example: inscribed angle','Например, ВсОШ или IMO':'Example: IMO or EGMO'
+ 'Например, геометрия или 55':'Example: geometry or 55','Например, вписанный угол':'Example: inscribed angle','Например, ВсОШ 2026 9 класс':'Example: VsOSh 2026 Grade 9'
 };
 function localize(){
   document.documentElement.lang=siteLanguage;

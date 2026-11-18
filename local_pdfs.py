@@ -51,6 +51,10 @@ class LocalPDFs:
         permissions=self.cached_json(self.dist/'catalog/permissions.json',{})
         return {sid for sid,row in permissions.items() if row.get('officialPageOnly') or row.get('externalOnly')}
 
+    def translation_blocked(self):
+        permissions=self.cached_json(self.dist/'catalog/permissions.json',{})
+        return self.page_only()|{sid for sid,row in permissions.items() if row.get('preserveOriginal')}
+
     def restricted(self,kind,key):
         if not HEX.fullmatch(key):return False
         page_only=self.page_only()
@@ -58,7 +62,7 @@ class LocalPDFs:
             return any(row['sha']==key and row['source'] in page_only for row in self.mirror().values())
         if kind=='translated':
             meta=read(JOBS/(key+'.metadata.json'),{})
-            return self.mirror().get(meta.get('url'),{}).get('source') in page_only
+            return self.mirror().get(meta.get('url'),{}).get('source') in self.translation_blocked()
         return False
 
     def material(self,sid,url):
@@ -117,6 +121,7 @@ class LocalPDFs:
         return row['path'],row['sha'],dict(title=title,organizer=name,url=row['url'],source=row.get('lang',''))
 
     def submit(self,req,background=False):
+        if req.get('source') in self.translation_blocked():return {'state':'unavailable','reason':'permission'}
         target=req.get('lang')
         if target not in ('ru','en'):return {'state':'unavailable'}
         resolved=self.resolve(req)

@@ -4,7 +4,8 @@ const ru=new Intl.NumberFormat(siteLanguage);
 const fmt=value=>ru.format(value);
 const norm=value=>String(value??'').normalize('NFKC').toLocaleLowerCase('ru').replaceAll('ё','е').replace(/[‐‑‒–—−]/g,'-').replace(/\s+/g,' ').trim();
 const tokens=value=>norm(value).match(/[\p{L}\p{N}]+/gu)||[];
-const contestNames=[
+const contestAliases=rows=>rows.flatMap(([id,...names])=>names.map(name=>[id,' '+tokens(name).join(' ')+' '])).sort((a,b)=>b[1].length-a[1].length);
+const contestNames=contestAliases([
   ['vosh','всош','вош','всеросс','vsosh','всероссийская олимпиада школьников'],
   ['hse','вп','вшэ','вышка','hse','высшая проба'],
   ['turgor','тургор','тг','turgor','турнир городов','tournament of towns'],
@@ -15,17 +16,29 @@ const contestNames=[
   ['turlom','турлом','турнир ломоносова'],['spb','спбмо'],['phystech','физтех','мфти'],
   ['matfest','матпраздник','математический праздник'],['memo','мемо','memo'],['bmo','британская олимпиада','bmo'],
   ['balkan','балканская олимпиада']
-].flatMap(([id,...names])=>names.map(name=>[id,' '+tokens(name).join(' ')+' '])).sort((a,b)=>b[1].length-a[1].length);
-function contestQuery(query){
+]);
+function contestQuery(query,names=contestNames){
   const key=' '+tokens(query).join(' ')+' ';
   if(key===' дано ')return {contest:'dano',words:[]};
-  const match=contestNames.find(([,name])=>key.includes(name));
+  const match=names.find(([,name])=>key.includes(name));
   return match?{contest:match[0],words:tokens(key.replace(match[1],' '))}:{contest:'',words:tokens(query)};
 }
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const read=(file,page)=>'reader.html?'+new URLSearchParams({file,page});
 const readDocument=(source,doc,grade)=>'reader.html?'+new URLSearchParams(grade?{source,doc,grade}:{source,doc});
 const gradeLabel=grade=>t(grade+(/[–,]/.test(grade)?' классы':' класс'),(/[–,]/.test(grade)?'Grades ':'Grade ')+grade);
+function archiveClass(item, requestedGrade) {
+  const grade = String(requestedGrade || '');
+  const pages = item?.gradePages || {};
+  const pageGrades = Object.keys(pages).filter(key => Number.isInteger(pages[key]) && pages[key] > 0)
+    .sort((a, b) => Number(a) - Number(b));
+  const ranges = norm(item?.grade).split(',').map(part => part.match(/\d+/g)?.map(Number) || []);
+  const matches = !grade || (pageGrades.length
+    ? pageGrades.includes(grade)
+    : ranges.some(([start, end = start]) => Number(grade) >= start && Number(grade) <= end));
+  const selected = pageGrades.includes(grade) ? grade : '';
+  return {matches, selected, labelGrade: selected || item?.grade || '', page: selected ? pages[selected] : 0, pageGrades};
+}
 const archiveTitle=(item,grade)=>[t(item.title,item.titleEn||item.title),item.stage&&grade?gradeLabel(grade):null].filter(Boolean).join(' · ');
 const types={study:t('Учебный том','Study volume'),practice:t('Тематический задачник','Topic problem book'),solutions:t('Официальные материалы','Official materials'),originals:t('Архивный оригинал','Original archive'),contexts:t('Кейсы DANO','DANO cases')};
 const fetchJSON=async path=>{const res=await fetch(path);if(!res.ok)throw Error(path);return res.json();};
@@ -74,7 +87,14 @@ const schoolSource=source=>source?.category==='Вступительные';
 const officialPageNote=()=>t('Материалы доступны на официальной странице школы.','Materials are available on the official school page.');
 const officialPageLabel=()=>t('Официальная страница школы','Official school page');
 const schoolPermissions=()=>fetchJSON('catalog/permissions.json').catch(()=>({}));
+function materialCredit(row){
+  if(row?.status!=='granted'||!row.attribution)return '';
+  return '<div class="material-credit"><strong>'+t('Источник — ','Source — ')+esc(row.attribution)+'</strong><br>'+
+    '<a href="'+esc(row.evidence)+'" target="_blank" rel="noopener noreferrer">'+t('Официальный раздел вступительных испытаний','Official entrance examination materials')+' ↗</a><br>'+
+    t('Опубликовано с разрешения школы.','Published with the school’s permission.')+'</div>';
+}
 function permissionLabel(row){
+  if(row?.status==='granted')return t('Разрешение получено · оригинальные материалы','Permission granted · original materials');
   if(row?.status==='draft')return t('Разрешение не подтверждено · письмо подготовлено, не отправлено','Permission unconfirmed · request drafted, unsent');
   if(row?.status==='sent')return t('На согласовании · ожидаем ответа школы','Permission pending · awaiting the school’s reply');
   return t('Разрешение не подтверждено','Permission unconfirmed');
@@ -107,18 +127,16 @@ async function browserReader(data){
   $('read-back').href=(source.category==='Вступительные'?'schools.html':'archives.html')+'?'+new URLSearchParams({source:sid});
   $('read-back').textContent=t('← К материалам','← Back to materials');
   $('read-back-row').hidden=false;
-  const gradePages=item?.gradePages||{};
-  const grades=Object.keys(gradePages).sort((a,b)=>Number(a)-Number(b));
-  const requestedGrade=params.get('grade');
-  const activeGrade=grades.includes(requestedGrade)?requestedGrade:grades[0];
-  const sourcePage=activeGrade?gradePages[activeGrade]:0;
-  $('read-source').href=official.href+(sourcePage?'#page='+sourcePage:'');
+  const {pageGrades:grades,selected:activeGrade,labelGrade,page:sourcePage}=archiveClass(item,params.get('grade'));
+  const originalURL=new URL(official.href);
+  if(sourcePage)originalURL.hash='page='+sourcePage;
+  $('read-source').href=originalURL.href;
   $('read-source').textContent=source.officialPageOnly?officialPageLabel()+' ↗':t('Оригинал у источника ↗','Open official original ↗');
   $('read-source').hidden=false;
-  $('read-title').textContent=item?archiveTitle(item,activeGrade||item.grade):source.name;
+  $('read-title').textContent=item?archiveTitle(item,labelGrade):source.name;
   $('read-meta').textContent=item?.stage
     ?(grades.length>1?t('Классы в PDF: ','Grades in this PDF: ')+grades.join(', '):'')
-    :[source.name,item?.year,activeGrade||item?.grade?gradeLabel(activeGrade||item.grade):null].filter(Boolean).join(' · ');
+    :[source.name,item?.year,labelGrade?gradeLabel(labelGrade):null].filter(Boolean).join(' · ');
   if(grades.length>1){
     const nav=$('read-grades');
     nav.hidden=false;
@@ -134,16 +152,19 @@ async function browserReader(data){
     }
   }
   document.title=$('read-title').textContent+' · Круг';
+  const permission=schoolSource(source)?(await schoolPermissions())[sid]:null;
   if(schoolSource(source)){
-    const info=(await schoolPermissions())[sid];
+    const info=permission;
     const status=$('read-permission');
     status.hidden=false;
-    status.textContent=permissionLabel(info)+' · ';
+    status.innerHTML=materialCredit(info);
+    status.classList.toggle('muted',info?.status!=='granted');
+    status.append(document.createTextNode(permissionLabel(info)+' · '));
     const details=document.createElement('a');
     details.href='permissions.html#'+encodeURIComponent(sid);
     details.textContent=t('Подробнее','Details');
     status.append(details);
-    if(source.officialPageOnly||info?.externalOnly||!localPDFServer){
+    if(source.officialPageOnly||info?.externalOnly||(!localPDFServer&&info?.status!=='granted')){
       for(const id of ['read-direct','read-download','offline-book'])$(id).hidden=true;
       $('read-actions').hidden=false;
       $('read-note').textContent=officialPageNote();
@@ -168,7 +189,8 @@ async function browserReader(data){
   const links=await fetchJSON('catalog/book-documents.json').catch(()=>({}));
   const entry=Object.hasOwn(links,url)?links[url]:null;
   const volume=entry&&data.volumes.find(v=>v.file===entry[0]);
-  const local=await localPDFMaterial(sid,url);
+  const published=item?.localFile;
+  const local=published&&/^materials\/[a-z0-9-]+\/[0-9a-f]{64}\.pdf$/.test(published)?{href:published}:await localPDFMaterial(sid,url);
   const bookPage=volume?entry[1]+Math.min(entry[2]-1,Math.max(0,sourcePage-1)):0;
   if(local){
     setPDFViewer(local.href,sourcePage||1);
@@ -192,6 +214,10 @@ async function browserReader(data){
       :t('Документ загружается с сайта организатора. Если просмотр недоступен, откройте оригинал по ссылке выше.',
         'This document loads from the organiser’s website. If it cannot be displayed here, open the official original above.');
   }
+  if(permission?.preserveOriginal){
+    $('read-note').textContent+=' '+t('По условиям разрешения школы доступен только неизменённый оригинал.','The school’s permission covers the unchanged original only.');
+    return;
+  }
   if(item){
     await pdfLanguages({item,directory,request:{source:sid,doc:url},canTranslate:!!local,
       href:local?.href||(volume?'books/'+encodeURIComponent(volume.file):official.href),
@@ -202,6 +228,7 @@ async function taskSearch(data){
   const form=$('task-form'),grid=$('task-grid'),status=$('task-count');
   const q=$('task-query'),topic=$('task-topic'),source=$('task-source'),grade=$('task-grade'),year=$('task-year'),solved=$('task-solved');
   const [records,directory]=await Promise.all([fetchJSON('catalog/tasks.json'),fetchJSON('catalog/archives.json')]);
+  const permissions=await schoolPermissions();
   const aliases=Object.fromEntries(directory.sources.map(s=>[s.id,s.aliases]));
   const years=[...new Set(records.map(r=>r.year).filter(Boolean))].sort((a,b)=>b-a);
   fill(topic,Object.entries(data.topics));
@@ -222,6 +249,8 @@ async function taskSearch(data){
   const title=r=>esc(data.topics[r.topic]||t('Архивная задача','Archive problem'));
   const button=(location,label,primary=false)=>'<a class="btn'+(primary?'':' btn-line')+'" href="'+esc(read(location[0],location[1]))+'">'+label+' ↗</a>';
   function card(r){
+    if(permissions[r.source]?.preserveOriginal)return '<article class="task"><h2>'+esc(data.sources[r.source])+' · '+esc(gradeLabel(r.grade||''))+'</h2>'+materialCredit(permissions[r.source])+
+      '<a class="btn" href="'+esc(readDocument(r.source,r.url))+'">'+t('Открыть оригинальное задание','Open the original task')+'</a></article>';
     const short=r.text.length>360;
     const preview=short?r.text.slice(0,360).trimEnd()+'…':r.text;
     const meta=[data.sources[r.source],r.year,r.grade?t('Класс ','Grade ')+r.grade:null,r.n?'№ '+r.n:null].filter(Boolean);
@@ -240,7 +269,9 @@ async function taskSearch(data){
     grid.innerHTML=selected.slice(start,end).map(card).join('')||'<p class="empty">'+t('Задачи не найдены. ','No problems found. ')+'<a href="archives.html?q='+encodeURIComponent(q.value)+'">'+t('Проверить официальные архивы','Search official archives')+'</a>.</p>';
     const visible=selected.slice(start,end);
     translateCatalogue([...grid.querySelectorAll('article.task')].flatMap((article,i)=>{
-      const row=visible[i], preview=article.querySelector('[data-translate-preview]');
+      const row=visible[i];
+      if(permissions[row.source]?.preserveOriginal)return [];
+      const preview=article.querySelector('[data-translate-preview]');
       return [
         translatedText(article.querySelector('[data-translate-topic]'),data.topics[row.topic]),
         translatedText(preview,row.text,value=>{
@@ -292,31 +323,136 @@ async function supportPage(){
 function studyRoute(){
   const route=$('number-route');
   document.title=t('Числа и делимость · Круг','Numbers and divisibility · Krug');
-  const storageKey='krug-study:numbers:v1';
-  const progress=$('route-progress');
-  const tasks=[...route.querySelectorAll('input[data-route-id]')];
-  let saved=[];
-  try{
-    const value=JSON.parse(localStorage.getItem(storageKey)||'[]');
-    if(Array.isArray(value))saved=value;
-  }catch{}
-  function update(){
-    const done=tasks.filter(task=>task.checked).map(task=>task.dataset.routeId);
-    progress.textContent=t('Решено ','Solved ')+fmt(done.length)+t(' из ',' of ')+fmt(tasks.length);
-    return done;
+  const storageKey = 'krug-study:numbers:v2';
+  const panels = [...route.querySelectorAll('[data-route-level]')];
+  const levels = panels.map(panel => panel.id);
+  const saved = readProgress();
+  const linkedLevel = levels.find(level => location.hash === '#' + level);
+  let current = linkedLevel || saved.level || '';
+  let screen = current ? 'practice' : saved.screen || 'start';
+  let recommended = saved.recommended || '';
+
+  function readProgress() {
+    try {
+      const value = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      const entries = Object.fromEntries(levels.map(level => {
+        const item = value.entries?.[level];
+        return [level, {
+          step: ['main', 'transfer', 'check', 'done'].includes(item?.step) ? item.step : 'main',
+          answer: typeof item?.answer === 'string' ? item.answer : ''
+        }];
+      }));
+      return {
+        entries,
+        level: levels.includes(value.level) ? value.level : '',
+        screen: ['start', 'diagnostic', 'choose', 'practice'].includes(value.screen) ? value.screen : 'start',
+        recommended: levels.includes(value.recommended) ? value.recommended : ''
+      };
+    } catch {
+      return {entries: Object.fromEntries(levels.map(level => [level, {step: 'main', answer: ''}]))};
+    }
   }
-  for(const task of tasks){
-    task.checked=saved.includes(task.dataset.routeId);
-    task.closest('label').hidden=false;
-    task.addEventListener('change',()=>{
-      const done=update();
-      try{localStorage.setItem(storageKey,JSON.stringify(done));}catch{}
-    });
+
+  function save() {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({
+        level: current, screen, recommended, entries: saved.entries
+      }));
+    } catch {}
   }
-  update();
-  progress.hidden=false;
+
+  function render(moveFocus = false) {
+    const active = screen === 'practice' && current;
+    $('route-controls').hidden = Boolean(active);
+    $('route-diagnostic').hidden = screen !== 'diagnostic';
+    $('route-picker').hidden = screen !== 'choose';
+    const recommendation = $('route-recommendation');
+    recommendation.hidden = !recommended;
+    if (recommended) {
+      const name = $(recommended + '-title').querySelector('[lang="' + siteLanguage + '"]').textContent;
+      recommendation.textContent = t('Рекомендуемый уровень — ', 'Suggested level — ') + name;
+    }
+    let focus = screen === 'diagnostic' ? $('route-diagnostic').querySelector('h2')
+      : $('route-picker').querySelector('h2');
+    for (const panel of panels) {
+      const entry = saved.entries[panel.id];
+      panel.hidden = panel.id !== active;
+      for (const control of panel.querySelectorAll('.route-change, .route-next, .route-answer')) {
+        control.hidden = false;
+      }
+      for (const article of panel.querySelectorAll('[data-step]')) {
+        article.hidden = article.dataset.step !== (entry.step === 'check' ? 'transfer' : entry.step);
+        if (!panel.hidden && !article.hidden) focus = article.querySelector('h3');
+      }
+      const textarea = panel.querySelector('textarea');
+      textarea.readOnly = entry.step === 'check';
+      textarea.value = entry.answer;
+      const check = panel.querySelector('[data-route-action="check"]');
+      check.disabled = !entry.answer.trim();
+      check.parentElement.hidden = entry.step === 'check';
+      panel.querySelector('[data-model]').hidden = entry.step !== 'check';
+      panel.querySelector('[data-model] details').open = entry.step === 'check';
+      panel.querySelector('[data-reflection]').hidden = entry.step !== 'check';
+    }
+    if (moveFocus && screen !== 'start') focus.focus();
+  }
+
+  route.addEventListener('input', event => {
+    if (!event.target.matches('.route-answer textarea') || !current) return;
+    saved.entries[current].answer = event.target.value;
+    $(current).querySelector('[data-route-action="check"]').disabled = !event.target.value.trim();
+    save();
+  });
+
+  route.addEventListener('click', event => {
+    const action = event.target.closest('[data-route-action]')?.dataset.routeAction;
+    if (!action) return;
+    if (action === 'diagnostic' || action === 'choose') {
+      screen = action;
+      current = '';
+      if (action === 'diagnostic') recommended = '';
+    } else if (action.startsWith('recommend-')) {
+      recommended = action.slice('recommend-'.length);
+      screen = 'choose';
+    } else if (action.startsWith('level-')) {
+      current = action.slice('level-'.length);
+      screen = 'practice';
+    } else if (current) {
+      saved.entries[current].step = action === 'retry' ? 'transfer' : action;
+    }
+    if (levels.includes(location.hash.slice(1))) {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    save();
+    render(true);
+  });
+  render();
+}
+function physicsPractice(){
+  const query=$('physics-query'),topic=$('physics-topic'),empty=$('physics-empty'),count=$('physics-count');
+  const problems=[...$('physics-problems').children].map(card=>({card,key:norm(card.textContent)}));
+  if(siteLanguage==='en'){
+    document.title='Olympiad physics · Krug';
+    for(const option of topic.options)option.textContent=option.dataset.en;
+  }
+  function filter(){
+    const words=tokens(query.value);
+    let visible=0;
+    for(const {card,key} of problems){
+      card.hidden=Boolean(topic.value&&card.dataset.topic!==topic.value)||!words.every(word=>key.includes(word));
+      if(!card.hidden)visible++;
+    }
+    count.textContent=t('Найдено задач: ','Problems found: ')+fmt(visible);
+    empty.hidden=visible>0;
+  }
+  query.addEventListener('input',filter);
+  topic.addEventListener('change',filter);
+  $('physics-filters').hidden=false;
+  count.hidden=false;
+  filter();
 }
 (async()=>{
+  if($('physics-problems')){physicsPractice();return;}
   if($('number-route')){studyRoute();return;}
   if($('support-card')){await supportPage();return;}
   if(!($('volume-grid')||$('task-grid')||$('read-frame')))return;

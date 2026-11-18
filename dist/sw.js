@@ -1,12 +1,12 @@
 'use strict';
 const scope=self.registration.scope;
 const appPrefix='krug-app:'+scope+':';
-const APP=appPrefix+'v15',BOOKS='krug-books:'+scope+':v1';
-const shell=['index.html','tasks.html','reader.html','about.html','support.html','archives.html','schools.html','permissions.html','learn-numbers.html','contents.html',
+const APP=appPrefix+'v23',BOOKS='krug-books:'+scope+':v1';
+const shell=['index.html','tasks.html','reader.html','about.html','support.html','archives.html','physics.html','schools.html','permissions.html','learn-numbers.html','contents.html',
   'assets/site.css','assets/site.js','assets/archive.js','assets/locale.js','assets/offline.js','assets/pdf-local.js','assets/text-local.js','assets/geometry.svg','assets/mark.svg',
   'catalog/library.json','catalog/archives.json','catalog/book-documents.json','catalog/support.json','catalog/permissions.json'];
 const urlOf=path=>new URL(path,scope).href;
-const isPDF=path=>/^(?:books\/[a-z0-9-]+|__krug\/(?:pdf|translated)\/[0-9a-f]{64})\.pdf$/.test(path);
+const isPDF=path=>/^(?:books\/[a-z0-9-]+|materials\/letovo\/[0-9a-f]{64}|__krug\/(?:pdf|translated)\/[0-9a-f]{64})\.pdf$/.test(path);
 self.addEventListener('install',e=>e.waitUntil(caches.open(APP).then(c=>c.addAll(shell.map(path=>new Request(urlOf(path),{cache:'reload'})))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{
   const app=await caches.open(APP);

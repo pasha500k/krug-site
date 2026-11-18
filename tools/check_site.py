@@ -19,8 +19,15 @@ assert all(r['source'] in sources and external(r['url']) for r in archive['items
 school_sources={s['id'] for s in archive['sources'] if s['category']=='Вступительные'}
 permissions=json.loads((root/'catalog/permissions.json').read_text())
 assert permissions.keys()<=school_sources
-assert all(row['status'] in ('draft','sent','unconfirmed') and external(row['evidence'])
+assert all(row['status'] in ('draft','sent','unconfirmed','granted') and external(row['evidence'])
            for row in permissions.values())
+for item in archive['items']:
+    if item.get('localFile'):
+        import hashlib,re
+        assert permissions.get(item['source'],{}).get('status')=='granted'
+        assert re.fullmatch(r'materials/[a-z0-9-]+/[0-9a-f]{64}\.pdf',item['localFile'])
+        pdf=root/item['localFile']
+        assert hashlib.sha256(pdf.read_bytes()).hexdigest()==pdf.stem
 page_only={sid for sid,row in permissions.items() if row.get('officialPageOnly')}
 assert {s['id'] for s in archive['sources'] if s.get('officialPageOnly')}==page_only
 assert all(r['source'] not in page_only for r in archive['items'])

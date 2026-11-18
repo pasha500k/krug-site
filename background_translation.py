@@ -58,7 +58,7 @@ class BackgroundTranslation:
         tasks = self.pdfs.cached_json(dist / 'tasks.json', [])
         library = self.pdfs.cached_json(dist / 'library.json', {})
         archive = self.pdfs.cached_json(dist / 'archives.json', {})
-        blocked = self.pdfs.page_only()
+        blocked = self.pdfs.translation_blocked()
         labels = [*library.get('topics', {}).values(), *library.get('sources', {}).values()]
         labels.extend(v['title'] for v in library.get('volumes', []))
         labels.extend(s['name'] for s in archive.get('sources', []))
@@ -145,7 +145,7 @@ class BackgroundTranslation:
         sources = self.pdfs.cached_json(dist / 'archives.json', {}).get('items', [])
         official = {(official_group(row), row.get('lang')) for row in sources
                     if row['source'] in ('imo', 'egmo', 'rmm')}
-        blocked = self.pdfs.page_only()
+        blocked = self.pdfs.translation_blocked()
         originals = sorted(self.pdfs.mirror().values(),
                            key=lambda row: (-(row.get('year') or 0), row.get('kind') != 'problems', row['url']))
         volumes = iter(self.pdfs.cached_json(dist / 'library.json', {}).get('volumes', []))

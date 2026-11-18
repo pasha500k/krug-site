@@ -1,8 +1,9 @@
 from pathlib import Path
 from numbers_route import numbers_route
+from physics_page import physics_page
 root=Path(__file__).resolve().parents[1]/'dist'
 def page(name,title,body):
-    nav=''.join(f'<a href="{file}"'+(' aria-current="page"' if name==file else '')+f'>{label}</a>' for file,label in [('index.html','Тома'),('tasks.html','Задачи'),('archives.html','Олимпиады'),('schools.html','Поступление'),('about.html','О библиотеке')])
+    nav=''.join(f'<a href="{file}"'+(' aria-current="page"' if name==file else '')+f'>{label}</a>' for file,label in [('index.html','Тома'),('tasks.html','Задачи'),('archives.html','Олимпиады'),('physics.html','Физика'),('schools.html','Поступление'),('about.html','О библиотеке')])
     (root/name).write_text(f'''<!doctype html>
 <html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Круг — библиотека олимпиадной математики. 57 томов, теория и поиск по архивным задачам.">
@@ -16,14 +17,14 @@ page('index.html','Библиотека олимпиадной математи�
 <section class="hero">
 <div class="hero-copy"><div class="eyebrow">Электронная библиотека</div><h1>Олимпиадная<br>математика</h1>
 <p>Теория, задачи и официальные разборы. Выберите класс, откройте нужный том или найдите задачу по условию.</p>
-<div class="actions"><a class="btn btn-light" href="#volumes">Выбрать том ↓</a><a class="btn btn-line" href="tasks.html">Найти задачу →</a></div></div>
+<div class="actions"><a class="btn btn-light" href="learn-numbers.html">Начать тренировку →</a><a class="btn btn-line" href="#volumes">Выбрать том ↓</a><a class="btn btn-line" href="tasks.html">Найти задачу →</a></div></div>
 <img class="hero-art" src="assets/geometry.svg" alt="" width="520" height="460"></section>
 <div class="metrics" aria-label="Библиотека в цифрах">
 <div class="metric"><b id="stat-books">57</b><span>томов</span></div><div class="metric"><b id="stat-pages">9 699</b><span>страниц</span></div>
 <div class="metric"><b id="stat-tasks">8 089</b><span>записей задач</span></div><div class="metric"><b id="stat-study">20</b><span>учебных томов</span></div>
 </div>
 <section class="guide offline-box" aria-labelledby="offline-title"><div><strong id="offline-title">Библиотека без интернета</strong><p id="offline-status" role="status">Сохрани указатель сейчас, а нужные PDF — на странице чтения.</p></div><button class="btn btn-line" id="offline-save" type="button">Сохранить указатель</button></section>
-<section class="guide route-entry" aria-labelledby="route-heading"><div><div class="eyebrow">Учебный маршрут</div><h2 id="route-heading">Числа и делимость</h2><p>Шесть задач на трёх уровнях. Подсказки и разборы на русском и английском.</p></div><a class="btn" href="learn-numbers.html">Начать маршрут →</a></section>
+<section class="guide route-entry" aria-labelledby="route-heading"><div><div class="eyebrow">Учебный маршрут</div><h2 id="route-heading">Числа и делимость</h2><p>Три уровня сложности. Подсказки, разборы и новая задача на тот же метод.</p></div><a class="btn" href="learn-numbers.html">Начать тренировку →</a></section>
 <section class="section"><div class="section-head"><div><div class="eyebrow">Учебная серия</div><h2>Начните с класса</h2><p>По пять томов на класс: теория, схемы, упражнения и разборы.</p></div></div>
 <div class="levels"><button class="level" type="button" data-level="8"><b>8 класс</b><span>5 томов →</span></button>
 <button class="level" type="button" data-level="9"><b>9 класс</b><span>5 томов →</span></button>
@@ -56,7 +57,7 @@ page('reader.html','Чтение тома','''
 <p class="compact" id="read-back-row" hidden><a id="read-back">← К материалам</a></p>
 <div class="page-head reader-head"><div><div class="eyebrow" id="read-meta">Библиотека</div><h1 id="read-title">Чтение тома</h1></div>
 <div class="actions" id="read-actions" hidden><a class="btn btn-line" id="read-source" target="_blank" rel="noopener noreferrer" hidden>Оригинал у источника ↗</a><a class="btn btn-line" id="read-direct" target="_blank" rel="noopener">Открыть PDF ↗</a><a class="btn" id="read-download" download>Скачать</a><button class="btn btn-line" id="offline-book" type="button">Сохранить для офлайна</button></div></div>
-<p id="read-permission" class="muted" hidden></p>
+<div id="read-permission" class="muted" hidden></div>
 <nav class="actions" id="read-grades" aria-label="Классы / Grades" hidden></nav>
 <p class="count" id="offline-book-status" role="status"></p>
 <div class="field pdf-language" id="read-language-field" hidden><label id="read-language-label" for="read-language">Язык PDF</label><select id="read-language"><option value="original">Оригинал</option></select></div>
@@ -90,7 +91,7 @@ def directory(schools=False):
 <header class="page-head"><div class="eyebrow">Официальные источники</div><h1>{title}</h1><p>{intro}</p></header>
 {'<p><a href="permissions.html">Статус разрешений школ</a></p>' if schools else ''}
 <div class="filters" id="archive-filters" data-mode="{'schools' if schools else 'olympiads'}">
-<div class="field grow"><label for="archive-query">Название или ключевые слова</label><input type="search" id="archive-query" placeholder="Например, ВсОШ или IMO"></div>
+<div class="field grow"><label for="archive-query">Название или ключевые слова</label><input type="search" id="archive-query" placeholder="Например, ВсОШ 2026 9 класс"></div>
 <div class="field"><label for="archive-source">Источник</label><select id="archive-source"><option value="">Все источники</option></select></div>
 <div class="field"><label for="archive-year">Год</label><select id="archive-year"><option value="">Все годы</option></select></div>
 <div class="field"><label for="archive-grade">Класс</label><select id="archive-grade"><option value="">Все классы</option></select></div>
@@ -107,10 +108,12 @@ page('schools.html','Вступительные испытания',directory(Tr
 page('permissions.html','Разрешения школ','''
 <header class="page-head"><div class="eyebrow">Вступительные испытания</div><h1>Разрешения школ</h1>
 <p>Здесь указан статус разрешения на публикацию оригинальных PDF и английских переводов.</p></header>
-<p>Пока разрешения не подтверждены, публичный каталог ведёт к оригиналам на сайтах школ. Статус «На согласовании» появляется после отправки обращения.</p>
+<p>Для каждой школы отдельно указаны разрешённые способы использования. Если разрешение требует сохранять оригинал, перевод заданий отключён. Статус «На согласовании» появляется после отправки обращения.</p>
 <p id="permission-count" class="count" role="status">Загружаем указатель…</p>
 <div id="permission-schools" class="task-grid"></div>
 <p><a href="schools.html">← К вступительным испытаниям</a></p>
 ''')
 
 page('learn-numbers.html','Числа и делимость',numbers_route())
+
+page('physics.html','Олимпиадная физика',physics_page())

@@ -1,10 +1,12 @@
 {
   "letovo": {
-    "status": "draft",
-    "reason": "В демоверсиях школы указано ограничение на распространение за пределами letovo.ru.",
-    "reasonEn": "The school's sample papers restrict redistribution outside letovo.ru.",
+    "status": "granted",
+    "reason": "Школа разрешила размещать демонстрационные варианты и задания вступительных испытаний на страницах школы и в практике. При каждом использовании обязательно заметно указывать ОАНО «Школа „Летово“» и активную ссылку на официальный раздел. Формулировки и исходное оформление сохраняются без изменений.",
+    "reasonEn": "The school has permitted sample papers and entrance examination tasks on the school page and in Practice. Every use must prominently credit ОАНО «Школа „Летово“» and link to the official admissions section. Wording and original layout must remain unchanged.",
     "evidence": "https://letovo.ru/postuplenie/otvety-na-voprosy",
-    "officialPageOnly": true
+    "basis": "Ответ школы, предоставленный автором проекта.",
+    "attribution": "ОАНО «Школа „Летово“»",
+    "preserveOriginal": true
   },
   "sunc": {
     "status": "draft",
